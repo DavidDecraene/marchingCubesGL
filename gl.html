@@ -1,0 +1,69 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>gl test</title>
+  <base href="./">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="keywords" content="">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js" integrity="sha256-+09xst+d1zIS41eAvRDCXOf0MH993E4cS40hKBIJj8Q=" crossorigin="anonymous"></script>
+<script src="src/shader.utils.js"></script>
+<script src="src/canvas.js"></script>
+<script src="src/camera.js"></script>
+<script src="src/mesh.js"></script>
+<script src="src/node.js"></script>
+<script src="src/quad.js"></script>
+<script id="2d-vertex-shader" type="x-shader/x-vertex">
+  attribute vec4 aVertexPosition;
+
+  uniform mat4 uModelViewMatrix;
+  uniform mat4 uProjectionMatrix;
+
+  void main() {
+    gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
+
+  }
+  </script>
+  <script id="2d-vertex-color-shader" type="x-shader/x-vertex">
+    attribute vec4 aVertexPosition;
+    attribute vec4 aVertexColor;
+
+    uniform mat4 uModelViewMatrix;
+    uniform mat4 uProjectionMatrix;
+
+    varying lowp vec4 vColor;
+
+    void main() {
+      gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
+      vColor = aVertexColor;
+    }
+    </script>
+
+  <script id="2d-fragment-shader" type="x-shader/x-fragment">
+  precision mediump float;
+
+  uniform vec4 u_color;
+
+  void main() {
+     gl_FragColor = u_color;
+  }
+  </script>
+
+<script id="2d-fragment-vertexcolor-shader" type="x-shader/x-fragment">
+varying lowp vec4 vColor;
+
+void main() {
+   gl_FragColor = vColor;
+}
+</script>
+
+</head>
+
+<body>
+  <canvas width="400" height="400" id="canvas"></canvas>
+  <script type="text/javascript" src="./main.js"></script>
+</body>
+
+</html>
