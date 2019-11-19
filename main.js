@@ -7,16 +7,24 @@ var program = new GLShaderUtils(canvas.gl)
   .initShaderProgramFromScript('2d-vertex-color-shader',
    '2d-fragment-vertexcolor-shader');
 
-   const cubeB = new CubeBuilder(1);
-   cubeB.frontFace([1.0,  1.0,  1.0,  1.0]);
-   cubeB.backFace([1.0,  0.0,  0.0,  1.0]);
-   cubeB.topFace([0.0,  1.0,  0.0,  1.0]);
-   cubeB.bottomFace([0.0,  0.0,  1.0,  1.0]);
-   cubeB.rightFace([1.0,  1.0,  0.0,  1.0]);
-   cubeB.leftFace([1.0,  0.0,  1.0,  1.0]);
-   console.log(cubeB);
+const voxelModel = new VoxelModel(vec3.fromValues(16, 16, 16));
+voxelModel.setVoxel(vec3.fromValues(0, 0, 0), { type: 1 });
+voxelModel.setVoxel(vec3.fromValues(0, 1, 0), { type: 1 });
+voxelModel.setVoxel(vec3.fromValues(1, 0, 0), { type: 1 });
+voxelModel.setVoxel(vec3.fromValues(0, -1, 0), { type: 1 });
 
-const mesh = new GLMesh(gl, cubeB.points, cubeB.colors, cubeB.indices);
+const voxelBuilder = new VoxelBuilder(voxelModel);
+/**
+voxelBuilder.append(vec3.fromValues(0, 0, 0));
+voxelBuilder.append(vec3.fromValues(0, 1, 0));
+voxelBuilder.append(vec3.fromValues(1, 0, 0));
+voxelBuilder.append(vec3.fromValues(0, -1, 0));
+*/
+voxelModel.getSectors().forEach(sector => {
+  sector.getVoxels().forEach(v => voxelBuilder.append(v));
+});
+
+const mesh = new GLMesh(gl, voxelBuilder.data);
 
 const buffer = mesh.createBuffers();
 const camera = new GLCamera(gl);
@@ -42,7 +50,7 @@ function drawScene() {
 
   canvas.clearRect();
 
-  worldNode.localTranslation[2] = -6.0;
+  worldNode.localTranslation[2] = -8.0;
   node.localTranslation[1] = 0.5;
 
   node.localRotation[2] = squareRotation;

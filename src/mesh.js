@@ -1,12 +1,18 @@
 /*jshint esversion: 6 */
 
+class MeshData {
+  constructor() {
+    this.points = [];
+    this.colors = [];
+    this.indices = [];
+  }
+
+}
 
 class GLMesh {
-  constructor(gl, points, colors, indices) {
+  constructor(gl, meshData) {
     this.gl = gl;
-    this.points = points;
-    this.colors = colors;
-    this.indices = indices;
+    this.data = meshData;
   }
 
   createBuffers() {
@@ -14,18 +20,18 @@ class GLMesh {
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, posBuffer);
     this.gl.bufferData(
         this.gl.ARRAY_BUFFER,
-        new Float32Array(this.points),
+        new Float32Array(this.data.points),
         this.gl.STATIC_DRAW);
     const colBuffer = this.gl.createBuffer();
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, colBuffer);
     this.gl.bufferData(
         this.gl.ARRAY_BUFFER,
-        new Float32Array(this.colors),
+        new Float32Array(this.data.colors),
         this.gl.STATIC_DRAW);
     const indexBuffer = this.gl.createBuffer();
     this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER,
-      new Uint16Array(this.indices), this.gl.STATIC_DRAW);
+      new Uint16Array(this.data.indices), this.gl.STATIC_DRAW);
     this.buffers = {
       position: posBuffer,
       colors: colBuffer,
@@ -51,7 +57,7 @@ class GLMesh {
     // draw
     // gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-    this.gl.drawElements(this.gl.TRIANGLES, this.indices.length, this.gl.UNSIGNED_SHORT, 0);
+    this.gl.drawElements(this.gl.TRIANGLES, this.data.indices.length, this.gl.UNSIGNED_SHORT, 0);
     // this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
 
   }

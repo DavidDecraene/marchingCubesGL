@@ -1,29 +1,55 @@
 /*jshint esversion: 6 */
+
+class QuadBuilder {
+  constructor(data) {
+    this.data = data;
+  }
+
+  fillIndices() {
+    const start = this.data.points.length / 3;
+    this.data.indices.push(start);
+    this.data.indices.push(start + 1);
+    this.data.indices.push(start + 2);
+    this.data.indices.push(start);
+    this.data.indices.push(start + 2);
+    this.data.indices.push(start + 3);
+  }
+
+  fillColor(color) {
+    for(let i = 0; i < 4 ; i++) {
+      this.data.colors.push(color[0]);
+      this.data.colors.push(color[1]);
+      this.data.colors.push(color[2]);
+      this.data.colors.push(color[3]);
+    }
+  }
+
+}
+
 class CubeBuilder {
 
 
-  constructor(unit) {
+  constructor(unit, data) {
     this.unitSize = unit === undefined ? 1.0 : unit;
-    this.points  = [];
-    this.colors  = [];
-    this.indices = [];
+    this.data = data ? data : new MeshData();
+    this.offset = [0, 0, 0];
   }
 
   addVertex(x, y, z) {
-    this.points.push(x);
-    this.points.push(y);
-    this.points.push(z);
+    this.data.points.push(x + this.offset[0]);
+    this.data.points.push(y + this.offset[1]);
+    this.data.points.push(z + this.offset[2]);
   }
 
   fbl() {
     const s = this.unitSize;
-    this.addVertex(-s, -s, s);
+    this.addVertex(-s , -s, s);
     return this;
   }
 
   fbr() {
     const s = this.unitSize;
-    this.addVertex(s, -s, s);
+    this.addVertex(s , -s, s);
     return this;
   }
 
@@ -64,28 +90,29 @@ class CubeBuilder {
   }
 
   fillQuadIndices() {
-    const start = this.points.length / 3;
-    this.indices.push(start);
-    this.indices.push(start + 1);
-    this.indices.push(start + 2);
-    this.indices.push(start);
-    this.indices.push(start + 2);
-    this.indices.push(start + 3);
+    const start = this.data.points.length / 3;
+    this.data.indices.push(start);
+    this.data.indices.push(start + 1);
+    this.data.indices.push(start + 2);
+    this.data.indices.push(start);
+    this.data.indices.push(start + 2);
+    this.data.indices.push(start + 3);
   }
 
   fillQuadColor(color) {
     for(let i = 0; i < 4 ; i++) {
-      this.colors.push(color[0]);
-      this.colors.push(color[1]);
-      this.colors.push(color[2]);
-      this.colors.push(color[3]);
+      this.data.colors.push(color[0]);
+      this.data.colors.push(color[1]);
+      this.data.colors.push(color[2]);
+      this.data.colors.push(color[3]);
     }
   }
 
   frontFace(color) { // Front face
-    this.fillQuadIndices();
+    const q = new QuadBuilder(this.data);
+    q.fillIndices();
+    q.fillColor(color);
     this.fbl().fbr().fur().ful();
-    this.fillQuadColor(color);
   }
 
   backFace(color) {

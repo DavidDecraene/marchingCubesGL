@@ -23,21 +23,55 @@ var voxels = {
   RIGHT: 1 << 5
 };
 
-class AbstractVoxelModel {
+class VoxelSector {
+  constructor(key, index, sectorSize) {
+    this.key = key;
+    this.index = index;
+    this.sectorSize = sectorSize;
+    this.values = new FlatArray(sectorSize);
+  }
+
+  getVoxels() {
+    return Object.keys(this.values.values).map(k => {
+      const idx = FlattenUtils.fromIndex(k, this.sectorSize);
+      return FlattenUtils.unsplit(this.index, idx, this.sectorSize);
+    });
+  }
+}
+
+class VoxelModel {
   constructor(sectorSize) {
     this.sectorSize = sectorSize;
-    this.sectorModel = new FlatModel(sectorSize);
     this.sectors = {};
   }
 
-  getVoxel(vector) {
-    const spl = this.sectorModel.split(vector);
-    // Outer => from sectors
-    // Inner => from retrieval
+  getSectors() {
+    const values = Object.keys(this.sectors).map(k => this.sectors[k]);
+    return values;
   }
 
-  getNeighbourFlag(vector) {
+  vectorKey(vector) {
+    return vector[0]+ '_' + vector[1] + '_' + vector[2];
+  }
 
+  setVoxel(vector, data) {
+    const spl = FlattenUtils.split(vector, this.sectorSize);
+    const sectorKey = this.vectorKey(spl.outer);
+    if(!this.sectors[sectorKey]) {
+      this.sectors[sectorKey] = new VoxelSector(sectorKey, spl.outer, this.sectorSize);
+    }
+    return this.sectors[sectorKey].values.setData(spl.inner, data);
+  }
+
+  getVoxel(vector) {
+    const spl = FlattenUtils.split(vector, this.sectorSize);
+    const sectorKey = this.vectorKey(spl.outer);
+    const sector = this.sectors[sectorKey];
+    if(!sector) return undefined;
+    // console.log(Object.keys(sector.values.values));
+    return sector.values.getData(spl.inner);
+    // Outer => from sectors
+    // Inner => from retrieval
   }
 }
 
@@ -54,44 +88,34 @@ var FlattenUtils = {
     value = Math.floor(value);
     if (value < 0) return undefined;
     const l = dimensionVector[0] * dimensionVector[1];
-    if (value < l * dimensionVector[2]) return undefined;
+    if (value >= l * dimensionVector[2]) {
+      return undefined;
+    }
     const yRest = value % l;
     const x = value - yRest;
 		const zRest = yRest % dimensionVector[1];
 		const y = yRest - zRest;
     return [Math.floor(x/l), Math.floor(y/dimensionVector[1]), zRest];
-  }
-
-};
-
-
-class FlatModel {
-  constructor(sizeVector) {
-
-  }
-
-  unsplit(outer, inner) {
-    const x = outer[0] * this.sizeVector[0] + inner[0];
-    const y = outer[1] * this.sizeVector[1] + inner[1];
-    const z = outer[2] * this.sizeVector[2] + inner[2];
+  }, unsplit: function(outer, inner, sizeVector) {
+    const x = outer[0] * sizeVector[0] + inner[0];
+    const y = outer[1] * sizeVector[1] + inner[1];
+    const z = outer[2] * sizeVector[2] + inner[2];
     return [x, y, z];
-  }
+  }, split:  function(vector, sizeVector) {
+    const x = Math.floor(vector[0] / sizeVector[0]);
+    const y = Math.floor(vector[1] / sizeVector[1]);
+    const z = Math.floor(vector[2] / sizeVector[2]);
 
-  split(vector) {
-    const x = Math.floor(vector[0] / this.sizeVector[0]);
-    const y = Math.floor(vector[1] / this.sizeVector[1]);
-    const z = Math.floor(vector[2] / this.sizeVector[2]);
-
-    const xRest = Math.Floor(vector[0] - ( x * this.sizeVector[0]));
-    const yRest = Math.Floor(vector[1] - ( y * this.sizeVector[1]));
-    const zRest = Math.Floor(vector[2] - ( z * this.sizeVector[2]));
+    const xRest = Math.floor(vector[0] - ( x * sizeVector[0]));
+    const yRest = Math.floor(vector[1] - ( y * sizeVector[1]));
+    const zRest = Math.floor(vector[2] - ( z * sizeVector[2]));
     return {
       outer: [x, y, z],
       inner: [xRest, yRest, zRest]
     };
   }
-}
 
+};
 
 
 class FlatArray {
