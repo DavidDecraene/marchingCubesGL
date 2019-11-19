@@ -14,6 +14,23 @@ var BitFlags = {
 
 };
 
+class LVec {
+  constructor(data) {
+    this.data = data;
+  }
+
+  add(x, y, z) {
+    if(x) this.data[0] += x;
+    if(y) this.data[1] += y;
+    if(z) this.data[2] += z;
+    return this;
+  }
+
+
+}
+
+
+
 var voxels = {
   FRONT: 1 << 0,
   BACK: 1 << 1,
