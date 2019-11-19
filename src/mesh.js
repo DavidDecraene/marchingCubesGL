@@ -5,6 +5,7 @@ class MeshData {
     this.points = [];
     this.colors = [];
     this.indices = [];
+    this.normals = [];
   }
 
 }
