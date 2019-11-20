@@ -66,14 +66,84 @@ class QuadBuilder {
 
 }
 
-class Quad {
-  // TODO: Use matrix rotations instead...
+class Polygon {
+  constructor() {
+
+  }
+
+  rotateY(degrees) {
+    const quat = quat2.create();
+    quat2.rotateY(quat, quat, degrees * Math.PI / 180);
+    this.points.forEach(p => vec3.transformQuat(p, p, quat));
+    return this;
+  }
+
+  rotateX(degrees) {
+    const quat = quat2.create();
+    quat2.rotateX(quat, quat, degrees * Math.PI / 180);
+    this.points.forEach(p => vec3.transformQuat(p, p, quat));
+    return this;
+  }
+
+  left() {
+    return this.rotateY(-90);
+  }
+
+  right() {
+    return this.rotateY(90);
+  }
+
+  back() {
+    return  this.rotateY(180);
+  }
+
+  top() {
+    return  this.rotateX(-90);
+  }
+
+  bottom() {
+    return this.rotateX(90);
+
+  }
+}
+
+class Triangle extends Polygon {
+  constructor(t, l, r) {
+    super();
+    this.d_t = t instanceof LVec ? t.data.slice() : t.slice();
+    this.d_l = l instanceof LVec ? l.data.slice() : l.slice();
+    this.d_r = r instanceof LVec ? r.data.slice() : r.slice();
+    this.points = [  this.d_t,   this.d_l,   this.d_r];
+  }
+
+  get t() {
+    if (!this._t) this._t = new LVec(this.d_t);
+    return this._t;
+  }
+
+  get l() {
+    if (!this._l) this._l = new LVec(this.d_l);
+    return this._l;
+  }
+
+  get r() {
+    if (!this._r) this._r = new LVec(this.d_r);
+    return this._r;
+  }
+
+  appendTo(triBuilder, color) {
+    triBuilder.append(this.d_t,this.d_l,this.d_r,color);
+  }
+}
+
+class Quad extends Polygon {
   constructor(s) {
+    super();
     this.d_bl = [-s, -s, s];
     this.d_br = [s, -s, s];
     this.d_ur = [s, s, s];
     this.d_ul = [-s, s, s];
-    this.front = true;
+    this.points = [this.d_bl, this.d_br, this.d_ur, this.d_ul];
   }
 
   get ul() {
@@ -94,55 +164,6 @@ class Quad {
   get bl() {
     if (!this._bl) this._bl = new LVec(this.d_bl);
     return this._bl;
-  }
-
-  y90() {
-    if (this.front) {
-      this.d_bl[0] *= -1;
-      this.d_ul[0] *= -1;
-      this.d_ur[2] *= -1;
-      this.d_br[2] *= -1;
-    } else {
-      this.d_bl[2] *= -1;
-      this.d_ul[2] *= -1;
-      this.d_ur[0] *= -1;
-      this.d_br[0] *= -1;
-    }
-    this.front = !this.front;
-    return this;
-  }
-
-  left() {
-    this.y90().y90().y90();
-    return this;
-  }
-
-  right() {
-    this.y90();
-    return this;
-  }
-
-  back() {
-    this.y90().y90();
-    return this;
-  }
-
-  top() {
-    // console.log(this.d_bl[1], 'top');
-    this.d_bl[1] *= -1;
-    this.d_br[1] *= -1;
-    this.d_ur[2] *= -1;
-    this.d_ul[2] *= -1;
-    return this;
-  }
-
-  bottom() {
-    this.d_bl[2] *= -1;
-    this.d_br[2] *= -1;
-    this.d_ur[1] *= -1;
-    this.d_ul[1] *= -1;
-    return this;
-
   }
 
   appendTo(quadBuilder, color) {

@@ -33,10 +33,8 @@ class LVec {
   }
 
   y(y) {
-    console.log(this.data[1]);
     if (y === undefined) return this.data[1];
     this.data[1] = y;
-    console.log(this.data);
     return this;
   }
 

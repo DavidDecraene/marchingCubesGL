@@ -33,10 +33,10 @@ class VoxelBuilder {
 
   }
 
-  buildQuads(flag) {
+  buildQuads(flag, side) {
     const s = this.inset;
     const result = {
-      quads: []
+      quads: [], tris: []
     };
     const middle = new Quad(this.cubes.unitSize);
     result.quads.push(middle);
@@ -55,12 +55,29 @@ class VoxelBuilder {
           botQuad.br.add(-s);
           result.quads.push(botQuad);
 
+          if (side === 0 || side === 1) // bottom left, right and topleft: right corners.
+          {
+            result.tris.push(new Triangle(
+              middle.bl.clone().add(0, -s),
+              middle.bl.clone().add(-s),
+              middle.bl.clone().add(-s, -s, -s)));
+            result.tris.push(new Triangle(
+              middle.br.clone().add(0, -s),
+              middle.br.clone().add(s, -s, -s),
+              middle.br.clone().add(s)));
+          }
+          /*
+          if (side === 0 || side === 1) // bottom right
+              result.tris.push(new Triangle(botQuad.bl, botQuad.ul, botQuad.bl.clone().add(-s, 0, -s)));
+            */
           const topQuad = new Quad(this.cubes.unitSize);
           topQuad.bl.y(topQuad.ul.y() - s);
           topQuad.br.y(topQuad.ur.y() - s);
           topQuad.ul.add(s);
           topQuad.ur.add(-s);
           result.quads.push(topQuad);
+
+          //result.tris.push(new Triangle(topQuad.ul, topQuad.bl.clone().add(-s, s, -s), topQuad.bl));
 
           const leftQuad = new Quad(this.cubes.unitSize);
           leftQuad.br.x(leftQuad.bl.x() + s);
@@ -93,8 +110,9 @@ class VoxelBuilder {
     if (sides[3]) flag = BitFlags.set(flag, 1 << 1); // bot
     if (sides[4]) flag = BitFlags.set(flag, 1 << 2); // right
     if (sides[5]) flag = BitFlags.set(flag, 1 << 3); // left
-    const r = this.buildQuads(flag);
+    const r = this.buildQuads(flag, 0);
     r.quads.forEach(q => q.appendTo(this.quads, color));
+    r.tris.forEach(q => q.appendTo(this.tris, color));
     if(this.mode === 2) {
       console.log(flag);
       // 16 possibilities...
@@ -152,8 +170,9 @@ class VoxelBuilder {
     if (sides[3]) flag = BitFlags.set(flag, 1 << 1); // bot
     if (sides[5]) flag = BitFlags.set(flag, 1 << 2); // right
     if (sides[4]) flag = BitFlags.set(flag, 1 << 3); // left
-    const r = this.buildQuads(flag);
+    const r = this.buildQuads(flag, 1);
     r.quads.forEach(q => q.back().appendTo(this.quads, color));
+    r.tris.forEach(q => q.back().appendTo(this.tris, color));
   }
 
   buildTop(voxel, sides) {
@@ -166,29 +185,54 @@ class VoxelBuilder {
     if (sides[0]) flag = BitFlags.set(flag, 1 << 1); // bot
     if (sides[4]) flag = BitFlags.set(flag, 1 << 2); // right
     if (sides[5]) flag = BitFlags.set(flag, 1 << 3); // left
-    const r = this.buildQuads(flag);
+    const r = this.buildQuads(flag, 2);
     r.quads.forEach(q => q.top().appendTo(this.quads, color)); // Something wrong
+    r.tris.forEach(q => q.top().appendTo(this.tris, color));
   }
 
   buildBottom(voxel, sides) {
     if (sides[3]) {
       return;
     }
-    new Quad(this.cubes.unitSize).bottom().appendTo(this.quads, [0.0,  0.0,  1.0,  1.0]);
+    const color = [0.0,  0.0,  1.0,  1.0];
+    let flag = 0;
+    if (sides[0]) flag = BitFlags.set(flag, 1 << 0); // top
+    if (sides[1]) flag = BitFlags.set(flag, 1 << 1); // bot
+    if (sides[4]) flag = BitFlags.set(flag, 1 << 2); // right
+    if (sides[5]) flag = BitFlags.set(flag, 1 << 3); // left
+    const r = this.buildQuads(flag, 3);
+    r.quads.forEach(q => q.bottom().appendTo(this.quads, color));
+    r.tris.forEach(q => q.bottom().appendTo(this.tris, color));
   }
 
   buildRight(voxel, sides) {
     if (sides[4]) {
       return;
     }
-    new Quad(this.cubes.unitSize).right().appendTo(this.quads, [1.0,  1.0,  0.0,  1.0]);
+    const color = [1.0,  1.0,  0.0,  1.0];
+    let flag = 0;
+    if (sides[2]) flag = BitFlags.set(flag, 1 << 0); // top
+    if (sides[3]) flag = BitFlags.set(flag, 1 << 1); // bot
+    if (sides[1]) flag = BitFlags.set(flag, 1 << 2); // right
+    if (sides[0]) flag = BitFlags.set(flag, 1 << 3); // left
+    const r = this.buildQuads(flag, 4);
+    r.quads.forEach(q => q.right().appendTo(this.quads, color));
+    r.tris.forEach(q => q.right().appendTo(this.tris, color));
   }
 
   buildLeft(voxel, sides) {
     if (sides[5]) {
       return;
     }
-    new Quad(this.cubes.unitSize).left().appendTo(this.quads, [1.0,  0.0,  1.0,  1.0]);
+    const color = [1.0,  0.0,  1.0,  1.0];
+    let flag = 0;
+    if (sides[2]) flag = BitFlags.set(flag, 1 << 0); // top
+    if (sides[3]) flag = BitFlags.set(flag, 1 << 1); // bot
+    if (sides[0]) flag = BitFlags.set(flag, 1 << 2); // right
+    if (sides[1]) flag = BitFlags.set(flag, 1 << 3); // left
+    const r = this.buildQuads(flag, 5);
+    r.quads.forEach(q => q.left().appendTo(this.quads, color));
+    r.tris.forEach(q => q.left().appendTo(this.tris, color));
   }
 
 
