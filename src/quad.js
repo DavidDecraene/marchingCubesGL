@@ -66,6 +66,90 @@ class QuadBuilder {
 
 }
 
+class Quad {
+  // TODO: Use matrix rotations instead...
+  constructor(s) {
+    this.d_bl = [-s, -s, s];
+    this.d_br = [s, -s, s];
+    this.d_ur = [s, s, s];
+    this.d_ul = [-s, s, s];
+    this.front = true;
+  }
+
+  get ul() {
+    if (!this._ul) this._ul = new LVec(this.d_ul);
+    return this._ul;
+  }
+
+  get ur() {
+    if (!this._ur) this._ur = new LVec(this.d_ur);
+    return this._ur;
+  }
+
+  get br() {
+    if (!this._br) this._br = new LVec(this.d_br);
+    return this._br;
+  }
+
+  get bl() {
+    if (!this._bl) this._bl = new LVec(this.d_bl);
+    return this._bl;
+  }
+
+  y90() {
+    if (this.front) {
+      this.d_bl[0] *= -1;
+      this.d_ul[0] *= -1;
+      this.d_ur[2] *= -1;
+      this.d_br[2] *= -1;
+    } else {
+      this.d_bl[2] *= -1;
+      this.d_ul[2] *= -1;
+      this.d_ur[0] *= -1;
+      this.d_br[0] *= -1;
+    }
+    this.front = !this.front;
+    return this;
+  }
+
+  left() {
+    this.y90().y90().y90();
+    return this;
+  }
+
+  right() {
+    this.y90();
+    return this;
+  }
+
+  back() {
+    this.y90().y90();
+    return this;
+  }
+
+  top() {
+    // console.log(this.d_bl[1], 'top');
+    this.d_bl[1] *= -1;
+    this.d_br[1] *= -1;
+    this.d_ur[2] *= -1;
+    this.d_ul[2] *= -1;
+    return this;
+  }
+
+  bottom() {
+    this.d_bl[2] *= -1;
+    this.d_br[2] *= -1;
+    this.d_ur[1] *= -1;
+    this.d_ul[1] *= -1;
+    return this;
+
+  }
+
+  appendTo(quadBuilder, color) {
+    quadBuilder.append(this.d_bl,this.d_br,this.d_ur,this.d_ul, color);
+  }
+}
+
 class CubeBuilder {
 
 

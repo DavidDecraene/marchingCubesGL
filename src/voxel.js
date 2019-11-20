@@ -26,6 +26,38 @@ class LVec {
     return this;
   }
 
+  x(x) {
+    if (x === undefined) return this.data[0];
+    this.data[0] = x;
+    return this;
+  }
+
+  y(y) {
+    console.log(this.data[1]);
+    if (y === undefined) return this.data[1];
+    this.data[1] = y;
+    console.log(this.data);
+    return this;
+  }
+
+  z(z) {
+    if (z === undefined) return this.data[2];
+    this.data[2] = z;
+    return this;
+  }
+
+  copy(other) {
+    this.data[0] = other.data[0];
+    this.data[1] = other.data[1];
+    this.data[2] = other.data[2];
+    return this;
+  }
+
+  clone() {
+    const data = this.data.slice();
+    return new LVec(data);
+  }
+
 
 }
 
