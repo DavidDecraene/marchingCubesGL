@@ -66,21 +66,61 @@ class QuadBuilder {
 
 }
 
+Rotators = {
+  x: new Map(),
+  y: new Map(),
+  z: new Map(),
+  rotateY: function( degrees) {
+    let quat = this.y.get(degrees);
+    if (!quat) {
+      quat = quat2.create();
+      quat2.rotateY(quat, quat, degrees * Math.PI / 180);
+      this.y.set(degrees, quat);
+    }
+    return quat;
+  },
+  rotateX: function( degrees) {
+    let quat = this.x.get(degrees);
+    if (!quat) {
+      quat = quat2.create();
+      quat2.rotateX(quat, quat, degrees * Math.PI / 180);
+      this.x.set(degrees, quat);
+    }
+    return quat;
+  },
+  rotateZ: function( degrees) {
+    let quat = this.z.get(degrees);
+    if (!quat) {
+      quat = quat2.create();
+      quat2.rotateZ(quat, quat, degrees * Math.PI / 180);
+      this.z.set(degrees, quat);
+    }
+    return quat;
+  }
+};
+
 class Polygon {
   constructor() {
 
   }
 
+  rotateZ(degrees) {
+    if (!degrees) { return this; }
+    const quat = Rotators.rotateZ(degrees);
+    this.points.forEach(p => vec3.transformQuat(p, p, quat));
+    return this;
+  }
+
   rotateY(degrees) {
-    const quat = quat2.create();
-    quat2.rotateY(quat, quat, degrees * Math.PI / 180);
+    if (!degrees) { return this; }
+    const quat = Rotators.rotateY(degrees);
     this.points.forEach(p => vec3.transformQuat(p, p, quat));
     return this;
   }
 
   rotateX(degrees) {
-    const quat = quat2.create();
-    quat2.rotateX(quat, quat, degrees * Math.PI / 180);
+    if (!degrees) { return this; }
+    const quat = Rotators.rotateX(degrees);
     this.points.forEach(p => vec3.transformQuat(p, p, quat));
     return this;
   }
@@ -116,6 +156,10 @@ class Triangle extends Polygon {
     this.points = [  this.d_t,   this.d_l,   this.d_r];
   }
 
+  clone() {
+      return new Triangle(this.d_t, this.d_l, this.d_r);
+  }
+
   get t() {
     if (!this._t) this._t = new LVec(this.d_t);
     return this._t;
@@ -137,13 +181,20 @@ class Triangle extends Polygon {
 }
 
 class Quad extends Polygon {
-  constructor(s) {
+  constructor(s, other) {
     super();
-    this.d_bl = [-s, -s, s];
-    this.d_br = [s, -s, s];
-    this.d_ur = [s, s, s];
-    this.d_ul = [-s, s, s];
+    this.s = s;
+    this.d_bl = other ? other.d_bl.slice() : [-s, -s, s];
+    this.d_br = other ? other.d_br.slice() : [s, -s, s];
+    this.d_ur = other ? other.d_ur.slice() : [s, s, s];
+    this.d_ul = other ? other.d_ul.slice() : [-s, s, s];
     this.points = [this.d_bl, this.d_br, this.d_ur, this.d_ul];
+  }
+
+  clone(cb) {
+    const clone =  new Quad(this.s, this);
+    if (cb) { cb(clone); }
+    return clone;
   }
 
   get ul() {
