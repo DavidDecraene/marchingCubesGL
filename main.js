@@ -13,23 +13,34 @@ voxelModel.setVoxel(vec3.fromValues(0, 0, 0), { type: 1 });
 voxelModel.setVoxel(vec3.fromValues(0, 1, 0), { type: 1 });
 voxelModel.setVoxel(vec3.fromValues(1, 0, 0), { type: 1 });
 voxelModel.setVoxel(vec3.fromValues(0, -1, 0), { type: 1 });
+voxelModel.setVoxel(vec3.fromValues(-1, 0, 0), { type: 1 });
 voxelModel.setVoxel(vec3.fromValues(0, 3, 0), { type: 1 });
+voxelModel.setVoxel(vec3.fromValues(0, -3, 0), { type: 1 });
+voxelModel.setVoxel(vec3.fromValues(0, -4, 0), { type: 1 });
+voxelModel.setVoxel(vec3.fromValues(1, -3, 0), { type: 1 });
+voxelModel.setVoxel(vec3.fromValues(1, -4, 0), { type: 1 });
+voxelModel.setVoxel(vec3.fromValues(3, 0, 0), { type: 1 });
+voxelModel.setVoxel(vec3.fromValues(4, 0, 0), { type: 1 });
+voxelModel.setVoxel(vec3.fromValues(3, 1, 0), { type: 1 });
+voxelModel.setVoxel(vec3.fromValues(4, 1, 0), { type: 1 });
+voxelModel.setVoxel(vec3.fromValues(3, 0, 1), { type: 1 });
+voxelModel.setVoxel(vec3.fromValues(4, 0, 1), { type: 1 });
+voxelModel.setVoxel(vec3.fromValues(4, 1, 1), { type: 1 });
 
+
+
+var currentMode = 1;
+var currentInset = 0.3;
 
 const voxelBuilder = new VoxelBuilder(voxelModel);
-/**
-voxelBuilder.append(vec3.fromValues(0, 0, 0));
-voxelBuilder.append(vec3.fromValues(0, 1, 0));
-voxelBuilder.append(vec3.fromValues(1, 0, 0));
-voxelBuilder.append(vec3.fromValues(0, -1, 0));
-*/
+voxelBuilder.mode = currentMode;
+voxelBuilder.inset = currentInset;
 voxelModel.getSectors().forEach(sector => {
   sector.getVoxels().forEach(v => voxelBuilder.append(v));
 });
-
 const mesh = new GLMesh(gl, voxelBuilder.data);
 
-const buffer = mesh.createBuffers();
+mesh.createBuffers();
 const camera = new GLCamera(gl);
 // look up where the vertex data needs to go.
 var programInfo = {
@@ -44,6 +55,23 @@ const worldNode = new GLNode();
 const node = new GLNode().appendTo(worldNode);
 node.mesh = mesh;
 
+
+function updateMesh(mode) {
+  const voxelBuilder2 = new VoxelBuilder(voxelModel);
+  voxelBuilder2.mode = mode;
+  voxelBuilder2.inset = currentInset;
+  voxelModel.getSectors().forEach(sector => {
+    sector.getVoxels().forEach(v => voxelBuilder2.append(v));
+  });
+  mesh.data = voxelBuilder2.data;
+  mesh.createBuffers();
+}
+
+function toggleMode() {
+  currentMode = currentMode === 1 ? 0 : 1;
+  updateMesh(currentMode);
+}
+
 // Actual drawing:
 //
 var squareRotation = 0;
@@ -53,7 +81,7 @@ function drawScene() {
 
   canvas.clearRect();
 
-  worldNode.localTranslation[2] = -8.0;
+  worldNode.localTranslation[2] = -10.0;
   node.localTranslation[1] = 0.5;
 
   node.localRotation[2] = squareRotation;

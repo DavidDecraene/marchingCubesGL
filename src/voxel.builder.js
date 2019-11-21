@@ -90,7 +90,11 @@ class VoxelBuilder {
           break;
         case 1: // 'top' is filled in..
         case 2: // only bot is filled in.
+        case 4: // only right is filled in.
+        case 8: // only left is filled in.
           if (flag === 2) rotation = 180;
+          else  if (flag === 4) rotation = -90;
+          else  if (flag === 8) rotation = 90;
           middle.ul.add(s);
           middle.ur.add(-s);
           middle.bl.add(s, s);
@@ -201,7 +205,6 @@ class VoxelBuilder {
     if (sides[4]) flag = BitFlags.set(flag, 1 << 2); // right
     if (sides[5]) flag = BitFlags.set(flag, 1 << 3); // left
     const r = this.buildQuads(flag, 2);
-    console.log(flag);
     r.quads.forEach(q => q.top().appendTo(this.quads, color)); // Something wrong
     r.tris.forEach(q => q.top().appendTo(this.tris, color));
   }
