@@ -14,6 +14,12 @@ voxelModel.setVoxel(vec3.fromValues(0, 1, 0), { type: 1 });
 voxelModel.setVoxel(vec3.fromValues(1, 0, 0), { type: 1 });
 voxelModel.setVoxel(vec3.fromValues(0, -1, 0), { type: 1 });
 voxelModel.setVoxel(vec3.fromValues(-1, 0, 0), { type: 1 });
+voxelModel.setVoxel(vec3.fromValues(-2, 0, 0), { type: 1 });
+voxelModel.setVoxel(vec3.fromValues(-3, 0, 0), { type: 1 });
+voxelModel.setVoxel(vec3.fromValues(-3, -1, 0), { type: 1 });
+voxelModel.setVoxel(vec3.fromValues(-3, 0, -1), { type: 1 });
+voxelModel.setVoxel(vec3.fromValues(-3, 0, 1), { type: 1 });
+
 voxelModel.setVoxel(vec3.fromValues(0, 3, 0), { type: 1 });
 voxelModel.setVoxel(vec3.fromValues(0, -3, 0), { type: 1 });
 voxelModel.setVoxel(vec3.fromValues(0, -4, 0), { type: 1 });

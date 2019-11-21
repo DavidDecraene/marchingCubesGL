@@ -23,6 +23,8 @@ class VoxelBuilder {
     const right = this.model.getVoxel(vec3.fromValues(vector[0] +1, vector[1], vector[2]));
     const left = this.model.getVoxel(vec3.fromValues(vector[0] - 1, vector[1] , vector[2]));
     const sides = [front, back, top, bottom, right, left];
+    // If everything is surrounded: return
+    //
     this.buildFront(vox, sides);
 
     this.buildBack(vox, sides);
@@ -33,25 +35,27 @@ class VoxelBuilder {
 
   }
 
-  createBevel1Border() {
+  createBevel1Border(ul, ur, bl, br) {
     const s = this.inset;
     const botQuad = new Quad(this.cubes.unitSize);
     botQuad.ul.y(botQuad.bl.y() + s);
     botQuad.ur.y(botQuad.br.y()  + s);
-    botQuad.bl.add(s);
-    botQuad.br.add(-s);
+    if (ul) botQuad.ul.add(s);
+    if (ur) botQuad.ur.add(-s);
+    if (bl) botQuad.bl.add(s);
+    if (br) botQuad.br.add(-s);
     return botQuad;
   }
 
   createBevel1Triangle() {
     const s = this.inset;
     const u = this.cubes.unitSize;
-    const bl = new LVec([-u, -u, u]); // front bottom left.
+    // const bl = new LVec([-u, -u, u]); // front bottom left.
     // [ -u + s, -u + s, u]
     const blTri = new Triangle(
-      bl.clone().add(s),
-      bl.clone().add(0, s),
-      bl.clone().add(0, 0, -s));
+      [-u + s, -u, u],
+      [-u, -u + s, u],
+      [-u, -u, u -s]);
     return blTri;
   }
 
@@ -65,28 +69,27 @@ class VoxelBuilder {
     let rotation = 0;
     let botQuad;
     if (this.mode === 1) {
+      const genTris = side === 0 || side === 1;
       // do we need to draw the bot corners..
       switch(flag) {
-        case 0: // No neighbours. All corners..
+        case 0: // No neighbours. All outer corners..
           middle.ul.add(s, -s);
           middle.ur.add(-s, -s);
           middle.bl.add(s, s);
           middle.br.add(-s, s);
 
-          if (side === 0 || side === 1) // bottom left, right and topleft: right corners.
+          if (genTris) // bottom left, right and topleft: right corners.
           {
-            const blTri = this.createBevel1Triangle();
-            result.tris.push(blTri);
-            result.tris.push(blTri.clone().rotateZ(90));
-            result.tris.push(blTri.clone().rotateZ(-90));
-            result.tris.push(blTri.clone().rotateZ(180));
+            result.tris.push(this.createBevel1Triangle());
+            result.tris.push(this.createBevel1Triangle().rotateZ(90));
+            result.tris.push(this.createBevel1Triangle().rotateZ(-90));
+            result.tris.push(this.createBevel1Triangle().rotateZ(180));
           }
+          result.quads.push(this.createBevel1Border(0, 0, 1, 1));
+          result.quads.push(this.createBevel1Border(0, 0, 1, 1).rotateZ(180));
 
-          botQuad = this.createBevel1Border();
-          result.quads.push(botQuad);
-          result.quads.push(botQuad.clone().rotateZ(180));
-          result.quads.push(botQuad.clone().rotateZ(-90));
-          result.quads.push(botQuad.clone().rotateZ(90));
+          result.quads.push(this.createBevel1Border(1, 1, 1, 1).rotateZ(-90));
+          result.quads.push(this.createBevel1Border(1, 1, 1, 1).rotateZ(90));
           break;
         case 1: // 'top' is filled in..
         case 2: // only bot is filled in.
@@ -100,18 +103,62 @@ class VoxelBuilder {
           middle.bl.add(s, s);
           middle.br.add(-s, s);
           middle.rotateZ(rotation);
-          botQuad = this.createBevel1Border();
+          botQuad = this.createBevel1Border(0, 0, 1, 1);
           result.quads.push(botQuad.clone().rotateZ(rotation));
           // one side must be extended: right
           result.quads.push(botQuad.clone(c => c.br.add(s)).rotateZ(90 + rotation));
           // one side must be extended: left
           result.quads.push(botQuad.clone(c => c.bl.add(-s)).rotateZ(-90 + rotation));
 
-          if (side === 0 || side === 1) {
+          if (genTris) {
             const blTri = this.createBevel1Triangle();
             result.tris.push(blTri.clone().rotateZ(rotation));
             result.tris.push(blTri.clone().rotateZ(90 + rotation));
           }
+          break;
+        case 5: // top & right
+        case 10:// left + bot
+        // Adjacent outer corners
+          if (flag === 10) rotation = -180;
+          middle.ul.add(s);
+          middle.bl.add(s, s);
+          middle.br.add(0, s);
+          middle.rotateZ(rotation);
+          result.quads.push(this.createBevel1Border(0, 0, 1, 0).rotateZ(rotation));
+          result.quads.push(this.createBevel1Border(0, 1, 0, 1).rotateZ(-90 + rotation));
+          if (genTris) { result.tris.push(this.createBevel1Triangle().rotateZ(rotation)); }
+          break;
+          //console.log('bottom and right');
+        case 9: // top & left
+        case 6: // bot & right
+        // Adjacent outer corners
+          if (flag === 6) rotation = 180;
+          middle.ur.add(-s);
+          middle.br.add(-s, s);
+          middle.bl.add(0, s);
+          middle.rotateZ(rotation);
+          result.quads.push(this.createBevel1Border(0, 0, 0, 1).rotateZ(rotation));
+          result.quads.push(this.createBevel1Border(1, 0, 1, 0).rotateZ(90 + rotation));
+          if (genTris) { result.tris.push(this.createBevel1Triangle().rotateZ(90 + rotation)); }
+          break;
+        // The next cases require no rounding (no outer corners)
+        case 3: // Top and bottom
+        case 12: // left & right
+        // opposing: build plain cubes
+          break;
+        case 7: // bot & right & top
+          //console.log('bottom and right & top');
+          break;
+        case 11: // left & bot & top
+          //console.log('left and bot & top');
+          break;
+        case 13: // left & right & top
+          //console.log('left and right & top');
+          break;
+        case 14: // left & right & bot
+          //console.log('left and right & bot');
+          break;
+        case 15: // all corners: cube it..
           break;
       }
 
