@@ -35,7 +35,7 @@ voxelModel.setVoxel(vec3.fromValues(4, 1, 1), { type: 1 });
 
 
 
-var currentMode = 1;
+var currentMode = 2;
 var currentInset = 0.3;
 
 const voxelBuilder = new VoxelBuilder(voxelModel);
@@ -74,7 +74,13 @@ function updateMesh(mode) {
 }
 
 function toggleMode() {
-  currentMode = currentMode === 1 ? 0 : 1;
+  let n = 0;
+  switch(currentMode) {
+    case 1: n = 0; break;
+    case 2: n = 1; break;
+    case 0: n = 2; break;
+  }
+  currentMode = n;
   updateMesh(currentMode);
 }
 
@@ -103,7 +109,7 @@ function render(now) {
   now *= 0.001;  // convert to seconds
   const deltaTime = now - then;
   then = now;
-  squareRotation += deltaTime;
+  squareRotation += deltaTime * 0.4;
   drawScene();
   requestAnimationFrame(render);
 }
