@@ -20,6 +20,7 @@ voxelModel.setVoxel(vec3.fromValues(-3, -1, 0), { type: 1 });
 voxelModel.setVoxel(vec3.fromValues(-3, 0, -1), { type: 1 });
 voxelModel.setVoxel(vec3.fromValues(-3, 0, 1), { type: 1 });
 
+/**
 voxelModel.setVoxel(vec3.fromValues(0, 3, 0), { type: 1 });
 voxelModel.setVoxel(vec3.fromValues(0, -3, 0), { type: 1 });
 voxelModel.setVoxel(vec3.fromValues(0, -4, 0), { type: 1 });
@@ -31,7 +32,7 @@ voxelModel.setVoxel(vec3.fromValues(3, 1, 0), { type: 1 });
 voxelModel.setVoxel(vec3.fromValues(4, 1, 0), { type: 1 });
 voxelModel.setVoxel(vec3.fromValues(3, 0, 1), { type: 1 });
 voxelModel.setVoxel(vec3.fromValues(4, 0, 1), { type: 1 });
-voxelModel.setVoxel(vec3.fromValues(4, 1, 1), { type: 1 });
+voxelModel.setVoxel(vec3.fromValues(4, 1, 1), { type: 1 });*/
 
 
 
@@ -109,7 +110,7 @@ function render(now) {
   now *= 0.001;  // convert to seconds
   const deltaTime = now - then;
   then = now;
-  squareRotation += deltaTime * 0.4;
+  squareRotation += deltaTime * 0.5;
   drawScene();
   requestAnimationFrame(render);
 }

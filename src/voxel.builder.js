@@ -36,15 +36,17 @@ class VoxelBuilder {
 
   }
 
-  createBevel2Border() {
+  createBevel2Border(ul, ur, bl, br) {
     const s = this.inset;
     const botQuad = new Quad(this.cubes.unitSize);
     botQuad.ul.y(botQuad.bl.y() + s);
     botQuad.ur.y(botQuad.br.y()  + s);
-    botQuad.ul.add(s);
-    botQuad.ur.add(-s);
-    botQuad.bl.add(s, s/2, -s/2);
-    botQuad.br.add(-s, s/2, -s/2);
+    if (ul) botQuad.ul.add(s);
+    if (ur) botQuad.ur.add(-s);
+    botQuad.bl.add(0, s/2, -s/2);
+    botQuad.br.add(0, s/2, -s/2);
+    if (bl) botQuad.bl.add(s);
+    if (br) botQuad.br.add(-s);
     return botQuad;
 
   }
@@ -103,10 +105,10 @@ class VoxelBuilder {
       quads: [], tris: []
     };
     const middle = new Quad(this.cubes.unitSize);
-    result.quads.push(middle);
     let rotation = 0;
     let botQuad;
     if (this.mode === 1) {
+      result.quads.push(middle);
       const genTris = side === 0 || side === 1;
       // do we need to draw the bot corners..
       switch(flag) {
@@ -201,19 +203,22 @@ class VoxelBuilder {
       }
 
     } else if (this.mode === 2) {
+      //result.quads.push(middle);
       // This mode has considerably more triangles....
       const genTris = side === 0 || side === 1;
       // do we need to draw the bot corners..
       switch(flag) {
         case 0: // No neighbours. All outer corners..
+          //result.quads.push(middle);
+          /**
           middle.ul.add(s, -s);
           middle.ur.add(-s, -s);
           middle.bl.add(s, s);
           middle.br.add(-s, s);
-            result.quads.push(this.createBevel2Border());
-            result.quads.push(this.createBevel2Border().rotateZ(180));
-            result.quads.push(this.createBevel2Border().rotateZ(90));
-            result.quads.push(this.createBevel2Border().rotateZ(-90));
+            result.quads.push(this.createBevel2Border(1, 1, 1, 1));
+            result.quads.push(this.createBevel2Border(1, 1, 1, 1).rotateZ(180));
+            result.quads.push(this.createBevel2Border(1, 1, 1, 1).rotateZ(90));
+            result.quads.push(this.createBevel2Border(1, 1, 1, 1).rotateZ(-90));
             const blTri = this.createBevel2Triangle();
             result.tris.push(blTri.clone().rotateZ(rotation));
             result.tris.push(blTri.clone().rotateZ(90 + rotation));
@@ -226,6 +231,7 @@ class VoxelBuilder {
               result.tris.push(this.createBevel2Triangle2().rotateZ(-90 + rotation));
               result.tris.push(this.createBevel2Triangle2().rotateZ(180 + rotation));
             }
+            */
           break;
 
         case 1: // 'top' is filled in..
@@ -235,27 +241,32 @@ class VoxelBuilder {
           if (flag === 2) rotation = 180;
           else  if (flag === 4) rotation = -90;
           else  if (flag === 8) rotation = 90;
+          if (side !== 0) return result;
+          console.log(flag, side);
+          result.quads.push(middle);
           middle.ul.add(s);
           middle.ur.add(-s);
           middle.bl.add(s, s);
           middle.br.add(-s, s);
           middle.rotateZ(rotation);
-          result.quads.push(this.createBevel2Border());
-          result.quads.push(this.createBevel2Border().rotateZ(90));
-          result.quads.push(this.createBevel2Border().rotateZ(-90));
+          result.quads.push(this.createBevel2Border(1, 1, 1, 1).rotateZ(rotation));
+          result.quads.push(this.createBevel2Border(1, 0, 1, 0).rotateZ(rotation + 90));
+          result.quads.push(this.createBevel2Border(0, 1, 0, 1).rotateZ(rotation - 90));
           result.tris.push(this.createBevel2Triangle().rotateZ(rotation));
           //result.tris.push(this.createBevel2Triangle().rotateZ(-90 + rotation));
-          result.tris.push(this.createBevel2Triangle().rotateZ(90 + rotation));
+          result.tris.push(this.createBevel2Triangle().rotateZ(rotation + 90));
           if (genTris) {
             // Fill the stretched corner = points from 3 diff tris;
             result.tris.push(this.createBevel2Triangle2().rotateZ(rotation));
-            result.tris.push(this.createBevel2Triangle2().rotateZ(90 + rotation));
+            result.tris.push(this.createBevel2Triangle2().rotateZ( rotation + 90));
           }
+
           break;
 
         case 5: // top & right
         case 10:// left + bot
         // Adjacent outer corners
+      /**
           if (flag === 10) rotation = -180;
           middle.ul.add(s);
           middle.bl.add(s, s);
@@ -266,6 +277,7 @@ class VoxelBuilder {
           //result.quads.push(this.createBevel2Border().rotateZ(-90 + rotation));
           if (genTris) {
           }
+          */
           break;
       }
     }
@@ -276,7 +288,7 @@ class VoxelBuilder {
     if (sides[0]) {
       return;
     }
-    const color = [1.0,  1.0,  1.0,  1.0];
+    const color = [1.0,  1.0,  1.0,  1.0]; // white
     let flag = 0;
     if (sides[2]) flag = BitFlags.set(flag, 1 << 0); // top
     if (sides[3]) flag = BitFlags.set(flag, 1 << 1); // bot
@@ -285,50 +297,7 @@ class VoxelBuilder {
     const r = this.buildQuads(flag, 0);
     r.quads.forEach(q => q.appendTo(this.quads, color));
     r.tris.forEach(q => q.appendTo(this.tris, color));
-    if(this.mode === 2) {
-      console.log(flag);
-      // 16 possibilities...
-      /**
-      switch(flag) {
-        case 0: // No neighbours.
-          break;
-        case 1:
-          // only the top is set.
-          new LVec(fbr).add(-s, s);
-          new LVec(fbl).add(s, s);
-          new LVec(fur).add(-s);
-          new LVec(ful).add(s);
-          // An extra quad from bottom side to bottom
-          const bfbl = new LVec(this.cubes.fbl()).add(s, 0, -s);
-          const bfbr = new LVec(this.cubes.fbr()).add(-s, 0, -s);
-          this.quads.append(bfbl.data, bfbr.data, fbr, fbl, color);
-          const tful = new LVec(this.cubes.ful()).add(0, 0, -s);
-          const bfbl2 = new LVec(this.cubes.fbl()).add(0, s, -s);
-          this.quads.append(tful.data, bfbl2.data, fbl, ful, color);
-          const tfur = new LVec(this.cubes.fur()).add(0, 0, -s);
-          const bfbr2 = new LVec(this.cubes.fbr()).add(0, s, -s);
-          this.quads.append(fbr, bfbr2.data, tfur.data, fur, color);
-          // Add a triangle bottom left and bottom right.
-          this.tris.append(bfbl.data, fbl, bfbl2.data, color);
-          this.tris.append(bfbr2.data, fbr, bfbr.data, color);
-          break;
-        case 2: // only bot is set..
-          break;
-        case 3: // top & bot
-          break;
-        case 4: // only right
-          break;
-        case 5: // right & top
-          break;
-        case 6: // right & bot
-          break;
-        case 7: // right & bot & top
-          break;
-        case 8: // only left
-          break;
-        // etc etc ...
-      } */
-    }
+
     //middle.appendTo(this.quads, color);
   }
 
@@ -336,7 +305,7 @@ class VoxelBuilder {
     if (sides[1]) {
       return;
     }
-    const color = [1.0,  0.0,  0.0,  1.0];
+    const color = [1.0,  0.0,  0.0,  1.0]; // green
     let flag = 0;
     if (sides[2]) flag = BitFlags.set(flag, 1 << 0); // top
     if (sides[3]) flag = BitFlags.set(flag, 1 << 1); // bot
@@ -351,7 +320,7 @@ class VoxelBuilder {
     if (sides[2]) {
       return;
     }
-    const color = [0.0,  1.0,  0.0,  1.0];
+    const color = [0.0,  1.0,  0.0,  1.0]; // red
     let flag = 0;
     if (sides[1]) flag = BitFlags.set(flag, 1 << 0); // top
     if (sides[0]) flag = BitFlags.set(flag, 1 << 1); // bot
@@ -366,7 +335,7 @@ class VoxelBuilder {
     if (sides[3]) {
       return;
     }
-    const color = [0.0,  0.0,  1.0,  1.0];
+    const color = [0.0,  0.0,  1.0,  1.0]; // blue
     let flag = 0;
     if (sides[0]) flag = BitFlags.set(flag, 1 << 0); // top
     if (sides[1]) flag = BitFlags.set(flag, 1 << 1); // bot
@@ -381,7 +350,7 @@ class VoxelBuilder {
     if (sides[4]) {
       return;
     }
-    const color = [1.0,  1.0,  0.0,  1.0];
+    const color = [1.0,  1.0,  0.0,  1.0]; //
     let flag = 0;
     if (sides[2]) flag = BitFlags.set(flag, 1 << 0); // top
     if (sides[3]) flag = BitFlags.set(flag, 1 << 1); // bot
@@ -392,7 +361,7 @@ class VoxelBuilder {
     r.tris.forEach(q => q.right().appendTo(this.tris, color));
   }
 
-  buildLeft(voxel, sides) {
+  buildLeft(voxel, sides) { // yellow
     if (sides[5]) {
       return;
     }
