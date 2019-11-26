@@ -107,6 +107,10 @@ class VoxelBuilder {
     const middle = new Quad(this.cubes.unitSize);
     let rotation = 0;
     let botQuad;
+    if (this.mode === 0) {
+      result.quads.push(middle);
+      return result;
+    }
     if (this.mode === 1) {
       result.quads.push(middle);
       const genTris = side === 0 || side === 1;
@@ -201,20 +205,21 @@ class VoxelBuilder {
         case 15: // all corners: cube it..
           break;
       }
-
-    } else if (this.mode === 2) {
-      //result.quads.push(middle);
+      return result;
+    }
+    if (this.mode === 2) {
+      // result.quads.push(middle);
       // This mode has considerably more triangles....
       const genTris = side === 0 || side === 1;
       // do we need to draw the bot corners..
       switch(flag) {
         case 0: // No neighbours. All outer corners..
           //result.quads.push(middle);
-          /**
           middle.ul.add(s, -s);
           middle.ur.add(-s, -s);
           middle.bl.add(s, s);
           middle.br.add(-s, s);
+          result.quads.push(middle);
             result.quads.push(this.createBevel2Border(1, 1, 1, 1));
             result.quads.push(this.createBevel2Border(1, 1, 1, 1).rotateZ(180));
             result.quads.push(this.createBevel2Border(1, 1, 1, 1).rotateZ(90));
@@ -231,7 +236,6 @@ class VoxelBuilder {
               result.tris.push(this.createBevel2Triangle2().rotateZ(-90 + rotation));
               result.tris.push(this.createBevel2Triangle2().rotateZ(180 + rotation));
             }
-            */
           break;
 
         case 1: // 'top' is filled in..
@@ -241,19 +245,16 @@ class VoxelBuilder {
           if (flag === 2) rotation = 180;
           else  if (flag === 4) rotation = -90;
           else  if (flag === 8) rotation = 90;
-          if (side !== 0) return result;
-          console.log(flag, side);
-          result.quads.push(middle);
           middle.ul.add(s);
           middle.ur.add(-s);
           middle.bl.add(s, s);
           middle.br.add(-s, s);
           middle.rotateZ(rotation);
+          result.quads.push(middle);
           result.quads.push(this.createBevel2Border(1, 1, 1, 1).rotateZ(rotation));
           result.quads.push(this.createBevel2Border(1, 0, 1, 0).rotateZ(rotation + 90));
           result.quads.push(this.createBevel2Border(0, 1, 0, 1).rotateZ(rotation - 90));
           result.tris.push(this.createBevel2Triangle().rotateZ(rotation));
-          //result.tris.push(this.createBevel2Triangle().rotateZ(-90 + rotation));
           result.tris.push(this.createBevel2Triangle().rotateZ(rotation + 90));
           if (genTris) {
             // Fill the stretched corner = points from 3 diff tris;
@@ -266,18 +267,63 @@ class VoxelBuilder {
         case 5: // top & right
         case 10:// left + bot
         // Adjacent outer corners
-      /**
           if (flag === 10) rotation = -180;
           middle.ul.add(s);
           middle.bl.add(s, s);
           middle.br.add(0, s);
           middle.rotateZ(rotation);
+          result.quads.push(middle);
+          result.quads.push(this.createBevel2Border(1, 0, 1, 0).rotateZ(rotation));
+          result.quads.push(this.createBevel2Border(0, 1, 0, 1).rotateZ(rotation -90));
+          result.tris.push(this.createBevel2Triangle().rotateZ(rotation));
           // TODO:
           //result.quads.push(this.createBevel2Border().rotateZ(rotation));
           //result.quads.push(this.createBevel2Border().rotateZ(-90 + rotation));
+
           if (genTris) {
+            // Fill the stretched corner = points from 3 diff tris;
+            result.tris.push(this.createBevel2Triangle2().rotateZ(rotation));
           }
-          */
+          break;
+
+        case 9: // top & left
+        case 6: // bot & right
+        // Adjacent outer corners
+          if (flag === 6) rotation = 180;
+          middle.ur.add(-s);
+          middle.br.add(-s, s);
+          middle.bl.add(0, s);
+          middle.rotateZ(rotation);
+          result.quads.push(middle);
+          result.quads.push(this.createBevel2Border(0, 1, 0, 1).rotateZ(rotation));
+          result.quads.push(this.createBevel2Border(1, 0, 1, 0).rotateZ(rotation + 90));
+          result.tris.push(this.createBevel2Triangle().rotateZ(rotation + 90));
+          if (genTris) {
+            // Fill the stretched corner = points from 3 diff tris;
+            result.tris.push(this.createBevel2Triangle2().rotateZ(rotation + 90));
+          }
+          break;
+        case 3: // Top and bottom
+        case 12: // left & right
+          // opposing: build plain cubes
+          if (flag === 12) rotation = 90;
+          middle.ur.add(-s);
+          middle.br.add(-s);
+          middle.bl.add(s);
+          middle.ul.add(s);
+          middle.rotateZ(rotation);
+          result.quads.push(middle);
+          result.quads.push(this.createBevel2Border(0, 0, 0, 0).rotateZ(rotation + 90));
+          result.quads.push(this.createBevel2Border(0, 0, 0, 0).rotateZ(rotation - 90));
+          break;
+        case 7: // bot & right & top
+          middle.ur.add(-s);
+          middle.br.add(-s);
+          middle.bl.add(s);
+          middle.ul.add(s);
+          result.quads.push(middle);
+          result.quads.push(this.createBevel2Border(0, 0, 0, 0).rotateZ(rotation - 90));
+          // Create inverted tris
           break;
       }
     }
