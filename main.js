@@ -95,7 +95,7 @@ function drawScene() {
 
   canvas.clearRect();
 
-  worldNode.localTranslation[2] = -10.0;
+  worldNode.localTranslation[2] = -8.0;
   node.localTranslation[1] = 0.5;
 
   node.localRotation[2] = squareRotation;
