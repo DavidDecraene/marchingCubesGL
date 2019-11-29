@@ -95,7 +95,7 @@ function drawScene() {
 
   canvas.clearRect();
 
-  worldNode.localTranslation[2] = -8.0;
+  worldNode.localTranslation[2] = -9.0;
   node.localTranslation[1] = 0.5;
 
   node.localRotation[2] = squareRotation;
@@ -111,7 +111,7 @@ function render(now) {
   now *= 0.001;  // convert to seconds
   const deltaTime = now - then;
   then = now;
-  squareRotation += deltaTime * 0.2;
+  squareRotation += deltaTime *  0.8;
   drawScene();
   requestAnimationFrame(render);
 }

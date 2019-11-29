@@ -191,6 +191,14 @@ class Quad extends Polygon {
     this.points = [this.d_bl, this.d_br, this.d_ur, this.d_ul];
   }
 
+  add(x, y, z) {
+    this.ul.add(x, y, z);
+    this.bl.add(x, y, z);
+    this.br.add(x, y, z);
+    this.ur.add(x, y, z);
+    return this;
+  }
+
   clone(cb) {
     const clone =  new Quad(this.s, this);
     if (cb) { cb(clone); }
