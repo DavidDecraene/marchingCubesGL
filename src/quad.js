@@ -156,6 +156,13 @@ class Triangle extends Polygon {
     this.points = [  this.d_t,   this.d_l,   this.d_r];
   }
 
+  add(x, y, z) {
+    this.t.add(x, y, z);
+    this.l.add(x, y, z);
+    this.r.add(x, y, z);
+    return this;
+  }
+
   clone() {
       return new Triangle(this.d_t, this.d_l, this.d_r);
   }

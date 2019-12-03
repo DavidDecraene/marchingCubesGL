@@ -37,34 +37,43 @@ class VoxelBuilder {
     if (!vox) return;
     this.quads.offset = vector;
   //  this.tris.offset = vector;
-    const front = this.model.getVoxel(vec3.fromValues(vector[0], vector[1], vector[2] + 1));
-    const back = this.model.getVoxel(vec3.fromValues(vector[0], vector[1], vector[2] - 1));
-    const top = this.model.getVoxel(vec3.fromValues(vector[0], vector[1] + 1, vector[2]));
-    const bottom = this.model.getVoxel(vec3.fromValues(vector[0], vector[1] - 1, vector[2]));
-    const right = this.model.getVoxel(vec3.fromValues(vector[0] +1, vector[1], vector[2]));
-    const left = this.model.getVoxel(vec3.fromValues(vector[0] - 1, vector[1] , vector[2]));
+    const vectors = [
+      vec3.fromValues(vector[0], vector[1], vector[2] + 1),
+      vec3.fromValues(vector[0], vector[1], vector[2] - 1),
+      vec3.fromValues(vector[0], vector[1] + 1, vector[2]),
+      vec3.fromValues(vector[0], vector[1] - 1, vector[2]),
+      vec3.fromValues(vector[0] +1, vector[1], vector[2]),
+      vec3.fromValues(vector[0] - 1, vector[1] , vector[2])
+    ];
+    const front = this.model.getVoxel(vectors[0]);
+    const back = this.model.getVoxel(vectors[1]);
+    const top = this.model.getVoxel(vectors[2]);
+    const bottom = this.model.getVoxel(vectors[3]);
+    const right = this.model.getVoxel(vectors[4]);
+    const left = this.model.getVoxel(vectors[5]);
     const sides = [front, back, top, bottom, right, left];
     // If everything is surrounded: return
     const sideResults = [];
     for(let i = 0; i < 7; i++) sideResults.push({ quads: [], tris: [] });
 
-    this.buildFront(vox, sides, sideResults);
-    this.buildBack(vox, sides, sideResults);
-    this.buildTop(vox, sides, sideResults);
-    this.buildBottom(vox, sides, sideResults);
-    this.buildRight(vox, sides, sideResults);
-    this.buildLeft(vox, sides, sideResults);
+    this.buildFront(vox, sides, sideResults, vectors);
+    this.buildBack(vox, sides, sideResults, vectors);
+    this.buildTop(vox, sides, sideResults, vectors);
+    this.buildBottom(vox, sides, sideResults, vectors);
+    this.buildRight(vox, sides, sideResults, vectors);
+    this.buildLeft(vox, sides, sideResults, vectors);
 
     const colors = [
       [1.0,  1.0,  1.0,  1.0],// front white
       [1.0,  0.0,  0.0,  1.0], // back red
       [0.0,  1.0,  0.0,  1.0], // green top
-      [0.0,  0.0,  1.0,  1.0],
+      [0.0,  0.0,  1.0,  1.0], // bot: blue
       [1.0,  1.0,  0.0,  1.0], // r: yellow.
       [1.0,  0.0,  1.0,  1.0], // l: pink
-      [1.0,  0.4,  0.4,  1.0] // testing
+      [1.0,  0.4,  0.1,  1.0] // testing
     ];
     sideResults.forEach((r, i) => {
+      if (i === 0 ) return;
       r.quads.forEach(q => q.appendTo(this.quads, colors[i]));
       r.tris.forEach(q => q.appendTo(this.tris, colors[i]));
     });
@@ -258,6 +267,7 @@ class VoxelBuilder {
           if (flag === 2) rotation = 180;
           else  if (flag === 4) rotation = -90;
           else  if (flag === 8) rotation = 90;
+        //r.enabled = false;
           middle.ul.add(s);
           middle.ur.add(-s);
           middle.bl.add(s, s);
@@ -338,9 +348,10 @@ class VoxelBuilder {
         case 13: // left & right & top
         case 14: // left & right & bot
           r.enabled = true;
-          if (flag === 13) rotation = 90;
-          else if (flag === 11) rotation = 180;
-          else if (flag === 14) rotation = -90;
+          let tCol = 0, bCol = 1, sCol = 2;
+          if (flag === 13){  rotation = 90; tCol = 3; bCol = 2; sCol = 0;  }
+          else if (flag === 11) { rotation = 180; tCol = 1; bCol = 0; sCol = 3; }
+          else if (flag === 14) { rotation = -90;  tCol = 2; bCol = 3; sCol = 1; }
           middle.ur.add(-s);
           middle.br.add(-s);
           middle.bl.add(s);
@@ -371,10 +382,11 @@ class VoxelBuilder {
           const rBot = this.createInnerBevelBorder(false); // bevel border right block bottom
           rTop = this.createInnerBevelBorder(true).rotateZ(180);
 
-          r.tri(this.createInnerBevelTriangle(false, rBot).rotateZ(rotation), tbrl[1]);
-          r.tri(this.createInnerBevelTriangle(false, rBot, p2).rotateZ(rotation), tbrl[2]);
-          r.tri(this.createInnerBevelTriangle(true, rTop).rotateZ(rotation), tbrl[0]);
-          r.tri(this.createInnerBevelTriangle(true, rTop, p).rotateZ(rotation), tbrl[2]);
+          //tbrl
+          r.tri(this.createInnerBevelTriangle(false, rBot).rotateZ(rotation), tbrl[bCol]);
+          r.tri(this.createInnerBevelTriangle(false, rBot, p2).rotateZ(rotation), tbrl[sCol]);
+          r.tri(this.createInnerBevelTriangle(true, rTop).rotateZ(rotation), tbrl[tCol]);
+          r.tri(this.createInnerBevelTriangle(true, rTop, p).rotateZ(rotation), tbrl[sCol]);
 
           r.quad(middle.rotateZ(rotation));
           r.quad(this.createBevel2Border(0, 0, 0, 0).rotateZ(rotation - 90)); //left side
@@ -403,7 +415,7 @@ class VoxelBuilder {
           ps[5] = rightP.clone().rotateZ(90);
           ps[6] = rightP.clone().rotateZ(180);
           ps[7] = rightP.clone().rotateZ(-90);
-          ps.forEach((pp, i) => r.quad(pp, i === 4 ? 0 : undefined));
+          ps.forEach((pp, i) => r.quad(pp));
           r.quad(right15);
           r.quad(left15);
           r.quad(top15);
@@ -411,18 +423,100 @@ class VoxelBuilder {
           r.quad(middle);
           const t1 = this.createInnerBevelTriangle(false, leftP);
           const t2 = this.createInnerBevelTriangle(false, leftP, ps[5]);
-          r.tri(t1.rotateZ(rotation), tbrl[1]);
+          r.tri(t1.rotateZ(rotation), tbrl[1] );
           r.tri(t2.rotateZ(rotation), tbrl[2]);
-          r.tri(t1.clone().rotateZ(rotation + 90), 6);
-          r.tri(t2.clone().rotateZ(rotation + 90), 6);
-          r.tri(t1.clone().rotateZ(rotation + 180), 6);
-          r.tri(t2.clone().rotateZ(rotation + 180), 6);
-          r.tri(t1.clone().rotateZ(rotation -90), 6);
-          r.tri(t2.clone().rotateZ(rotation  -90), 6);
+          r.tri(t1.clone().rotateZ(rotation + 90), tbrl[2]);
+          r.tri(t2.clone().rotateZ(rotation + 90), tbrl[0]);
+          r.tri(t1.clone().rotateZ(rotation + 180), tbrl[0]);
+          r.tri(t2.clone().rotateZ(rotation + 180), tbrl[3]);
+          r.tri(t1.clone().rotateZ(rotation -90), tbrl[3]);
+          r.tri(t2.clone().rotateZ(rotation  -90), tbrl[1]);
           break;
       }
     }
     return r;
+  }
+
+  buildInnerCorners(flag, side, tbrl, vectors) {
+    const s = this.inset;
+    const u = this.cubes.unitSize;
+    let rotation = 0;
+    const r = new BuildResult(side);
+    let leftP, rightP, lp, l1, l2;
+    console.log(flag, side);
+    // only ifthe corner between isnt filled as well..
+    switch(flag) {
+      case 5: // top & right
+      console.log(tbrl[2], vectors[tbrl[2]], tbrl[0], vectors[tbrl[0]]);
+        this.createInnerCorner(false, 180, r, tbrl[2], tbrl[0]);
+        break;
+      case 6: // bot & right : base
+        this.createInnerCorner(true, 0, r, tbrl[1], tbrl[2]);
+        break;
+      case 9: // left + top
+        console.log('TODO');
+        this.createInnerCorner(true, 180, r, 6, 6);
+        break;
+      case 10:// left + bot  : base
+        this.createInnerCorner(false, 0, r, tbrl[3], tbrl[1]);
+        break;
+      case 14: // left & right & bot
+        this.createInnerCorner(false, 0, r, tbrl[3], tbrl[1]);
+        this.createInnerCorner(true, 0, r, tbrl[1], tbrl[2]);
+        break;
+      case 11: // left & bot & top
+        console.log('TODO');
+        this.createInnerCorner(false, 0, r);
+        this.createInnerCorner(true, 180, r);
+        break;
+      case 7: // bot & right & top
+        this.createInnerCorner(false, 180, r, tbrl[2], tbrl[0]);
+        this.createInnerCorner(true, 0, r, tbrl[1], tbrl[2]);
+        break;
+      case 11: // left & bot & top
+        console.log('TODO');
+        this.createInnerCorner(true, 180, r);
+        this.createInnerCorner(false, 0, r);
+        break;
+      case 13: // left & right & top
+        console.log('TODO');
+        this.createInnerCorner(true, 180, r);
+        this.createInnerCorner(false, 180, r);
+        break;
+
+      case 3: // Top and bottom
+      case 12: // left & right
+      // opposing: ignore
+        break;
+      case 1: // 'top' is filled in..
+      case 2: // only bot is filled in.
+      case 4: // only right is filled in.
+      case 8: // only left is filled in.
+        break;
+    }
+    return r;
+  }
+
+  createInnerCorner(botRight, rotation, r, cSide, cSide2) {
+    if (botRight) {
+      const leftP = this.createInnerBevelBorder(false);
+      const rightP = this.createInnerBevelBorder(true);
+      const lp = this.createInnerBevelBorder(false);
+      const l1 = this.createInnerBevelTriangle(false, leftP);
+      const l2 = this.createInnerBevelTriangle(false, leftP, rightP.clone().rotateZ(90));
+      r.tri(l1.clone().rotateZ(rotation), cSide);
+      r.tri(l2.clone().rotateZ(rotation), cSide2);
+    } else  {
+      // BOT LEFT
+      const leftP = this.createInnerBevelBorder(false);
+      const rightP = this.createInnerBevelBorder(true);
+      const lp = this.createInnerBevelBorder(false);
+      const l1 = this.createInnerBevelTriangle(false, leftP);
+      const l2 = this.createInnerBevelTriangle(false, leftP, rightP.clone().rotateZ(90));
+
+      r.tri(l1.clone().rotateZ(rotation - 90), cSide);
+      r.tri(l2.clone().rotateZ(rotation - 90), cSide2);
+    }
   }
 
   createInnerBevelTriangle(rightSide, rBot, top) {
@@ -469,86 +563,133 @@ class VoxelBuilder {
 
   }
 
-  buildFront(voxel, sides, results) {
-    if (sides[0]) {
-      return;
-    }
+  buildFront(voxel, sides, results, vectors) {
+    const flanks = [2, 3, 4, 5];
     let flag = 0;
     if (sides[2]) flag = BitFlags.set(flag, 1 << 0); // top
     if (sides[3]) flag = BitFlags.set(flag, 1 << 1); // bot
     if (sides[4]) flag = BitFlags.set(flag, 1 << 2); // right
     if (sides[5]) flag = BitFlags.set(flag, 1 << 3); // left
-    const r = this.buildQuads(flag, 0, [2, 3, 4, 5]);
+    if (sides[0]) {
+      if (flag && this.mode === 2) {
+        // console.log('back', flag);
+        const r = this.buildInnerCorners(flag, 1, flanks, vectors);
+        r.quads.forEach(q => results[q.t].quads.push(q.v));
+        r.tris.forEach(q => results[q.t].tris.push(q.v));
+      }
+      return;
+    }
+    const r = this.buildQuads(flag, 0, flanks);
     r.quads.forEach(q => results[q.t].quads.push(q.v));
     r.tris.forEach(q => results[q.t].tris.push(q.v));
   }
 
-  buildBack(voxel, sides, results) {
-    if (sides[1]) {
-      return;
-    }
+  buildBack(voxel, sides, results, vectors) {
     let flag = 0;
+    const flanks = [2, 3, 5, 4];
     if (sides[2]) flag = BitFlags.set(flag, 1 << 0); // top
     if (sides[3]) flag = BitFlags.set(flag, 1 << 1); // bot
     if (sides[5]) flag = BitFlags.set(flag, 1 << 2); // right
     if (sides[4]) flag = BitFlags.set(flag, 1 << 3); // left
-    const r = this.buildQuads(flag, 1, [2, 3, 5, 4]);
+    if (sides[1]) {
+      if (flag && this.mode === 2) {
+        // console.log('back', flag);
+        const r = this.buildInnerCorners(flag, 1, flanks, vectors);
+        r.quads.forEach(q => results[q.t].quads.push(q.v.back()));
+        r.tris.forEach(q => results[q.t].tris.push(q.v.back()));
+      }
+      return;
+    }
+    const r = this.buildQuads(flag, 1, flanks);
     r.quads.forEach(q => results[q.t].quads.push(q.v.back()));
     r.tris.forEach(q => results[q.t].tris.push(q.v.back()));
   }
 
-  buildTop(voxel, sides, results) {
-    if (sides[2]) {
-      return;
-    }
+  buildTop(voxel, sides, results, vectors) {
     let flag = 0;
+    const flanks = [1, 0, 4, 5];
     if (sides[1]) flag = BitFlags.set(flag, 1 << 0); // top
     if (sides[0]) flag = BitFlags.set(flag, 1 << 1); // bot
     if (sides[4]) flag = BitFlags.set(flag, 1 << 2); // right
     if (sides[5]) flag = BitFlags.set(flag, 1 << 3); // left
-    const r = this.buildQuads(flag, 2, [1, 0, 4, 5]);
+    if (sides[2]) {
+      if (flag) {
+        // console.log('top', flag);
+        if (flag && this.mode === 2) {
+          // console.log('back', flag);
+          const r = this.buildInnerCorners(flag, 2, flanks, vectors);
+          r.quads.forEach(q => results[q.t].quads.push(q.v.top()));
+          r.tris.forEach(q => results[q.t].tris.push(q.v.top()));
+        }
+      }
+      // Top is obscured, left & right are visible... = flag 12  needs iner corners
+      // console.log(flag);
+      return;
+    }
+    const r = this.buildQuads(flag, 2, flanks);
     r.quads.forEach(q => results[q.t].quads.push(q.v.top()));
     r.tris.forEach(q => results[q.t].tris.push(q.v.top()));
   }
 
-  buildBottom(voxel, sides, results) {
-    if (sides[3]) {
-      return;
-    }
+  buildBottom(voxel, sides, results, vectors) {
     let flag = 0;
+    const flanks = [0, 1, 4, 5];
     if (sides[0]) flag = BitFlags.set(flag, 1 << 0); // top
     if (sides[1]) flag = BitFlags.set(flag, 1 << 1); // bot
     if (sides[4]) flag = BitFlags.set(flag, 1 << 2); // right
     if (sides[5]) flag = BitFlags.set(flag, 1 << 3); // left
-    const r = this.buildQuads(flag, 3, [0, 1, 4, 5]);
+    if (sides[3]) {
+      if (flag && this.mode === 2) {
+        // console.log('back', flag);
+        const r = this.buildInnerCorners(flag, 3, flanks, vectors);
+        r.quads.forEach(q => results[q.t].quads.push(q.v.bottom()));
+        r.tris.forEach(q => results[q.t].tris.push(q.v.bottom()));
+      }
+      return;
+    }
+    const r = this.buildQuads(flag, 3, flanks);
     r.quads.forEach(q => results[q.t].quads.push(q.v.bottom()));
     r.tris.forEach(q => results[q.t].tris.push(q.v.bottom()));
   }
 
-  buildRight(voxel, sides, results) {
-    if (sides[4]) {
-      return;
-    }
+  buildRight(voxel, sides, results, vectors) {
     let flag = 0;
+    const flanks = [2, 3, 1, 0];
     if (sides[2]) flag = BitFlags.set(flag, 1 << 0); // top
     if (sides[3]) flag = BitFlags.set(flag, 1 << 1); // bot
     if (sides[1]) flag = BitFlags.set(flag, 1 << 2); // right
     if (sides[0]) flag = BitFlags.set(flag, 1 << 3); // left
-    const r = this.buildQuads(flag, 4, [2, 3, 1, 0]);
+    if (sides[4]) {
+      if (flag && this.mode === 2) {
+        // console.log('back', flag);
+        const r = this.buildInnerCorners(flag, 4, flanks, vectors);
+        r.quads.forEach(q => results[q.t].quads.push(q.v.right()));
+        r.tris.forEach(q => results[q.t].tris.push(q.v.right()));
+      }
+      return;
+    }
+    const r = this.buildQuads(flag, 4, flanks);
     r.quads.forEach(q => results[q.t].quads.push(q.v.right()));
     r.tris.forEach(q => results[q.t].tris.push(q.v.right()));
   }
 
-  buildLeft(voxel, sides, results) { // yellow
-    if (sides[5]) {
-      return;
-    }
+  buildLeft(voxel, sides, results, vectors) { // yellow
     let flag = 0;
+    const flanks = [2, 3, 0, 1];
     if (sides[2]) flag = BitFlags.set(flag, 1 << 0); // top
     if (sides[3]) flag = BitFlags.set(flag, 1 << 1); // bot
     if (sides[0]) flag = BitFlags.set(flag, 1 << 2); // right
     if (sides[1]) flag = BitFlags.set(flag, 1 << 3); // left
-    const r = this.buildQuads(flag, 5, [2, 3, 0, 1]);
+    if (sides[5]) {
+      if (flag && this.mode === 2) {
+        // console.log('back', flag);
+        const r = this.buildInnerCorners(flag, 5, flanks, vectors);
+        r.quads.forEach(q => results[q.t].quads.push(q.v.left()));
+        r.tris.forEach(q => results[q.t].tris.push(q.v.left()));
+      }
+      return;
+    }
+    const r = this.buildQuads(flag, 5, flanks);
     r.quads.forEach(q => results[q.t].quads.push(q.v.left()));
     r.tris.forEach(q => results[q.t].tris.push(q.v.left()));
   }
