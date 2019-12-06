@@ -8,6 +8,7 @@ var program = new GLShaderUtils(canvas.gl)
    '2d-fragment-vertexcolor-shader');
 
 const voxelModel = new VoxelModel(vec3.fromValues(16, 16, 16));
+
 voxelModel.setVoxel(vec3.fromValues(0, 0, 0), { type: 1 });
 
 voxelModel.setVoxel(vec3.fromValues(0, 1, 0), { type: 1 });
@@ -25,6 +26,8 @@ voxelModel.setVoxel(vec3.fromValues(0, -3, 0), { type: 1 });
 voxelModel.setVoxel(vec3.fromValues(0, -4, 0), { type: 1 });
 voxelModel.setVoxel(vec3.fromValues(1, -3, 0), { type: 1 });
 voxelModel.setVoxel(vec3.fromValues(1, -4, 0), { type: 1 });
+
+
 voxelModel.setVoxel(vec3.fromValues(3, 0, 0), { type: 1 });
 voxelModel.setVoxel(vec3.fromValues(4, 0, 0), { type: 1 });
 voxelModel.setVoxel(vec3.fromValues(3, 1, 0), { type: 1 });
