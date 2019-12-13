@@ -6,13 +6,15 @@ class TriangleBuilder {
     this.offset = [0, 0, 0];
   }
 
-  addVertex(v) {
+  addVertex(v, t1, t2, textC) {
     this.data.points.push(v[0]);
     this.data.points.push(v[1]);
     this.data.points.push(v[2]);
+    this.data.uv.push(LVecs.rescale(t1, [0, 1], [textC[0], textC[0] + textC[2]]));
+    this.data.uv.push(LVecs.rescale(t2, [0, 1], [textC[1], textC[1] + textC[2]]));
   }
 
-  append(v1, v2, v3, color) {
+  append(v1, v2, v3, color, textC) {
     const start = this.data.points.length / 3;
     this.data.indices.push(start);
     this.data.indices.push(start + 1);
@@ -26,9 +28,9 @@ class TriangleBuilder {
     const v1O = vec3.add([], v1, this.offset);
     const v2O = vec3.add([], v2, this.offset);
     const v3O = vec3.add([], v3, this.offset);
-    this.addVertex(v1O);
-    this.addVertex(v2O);
-    this.addVertex(v3O);
+    this.addVertex(v1O, v1[3], v1[4], textC);
+    this.addVertex(v2O, v2[3], v2[4], textC);
+    this.addVertex(v3O, v3[3], v3[4], textC);
     const edge1 = vec3.subtract([], v2O, v1O);
     const edge2 = vec3.subtract([], v3O, v1O);
     const normal = vec3.cross([], edge1, edge2);
@@ -55,12 +57,12 @@ class QuadBuilder {
     this.tris = tris ? tris : new TriangleBuilder(data);
   }
 
-  append(v1, v2, v3, v4, color) {
+  append(v1, v2, v3, v4, color, textC) {
     this.tris.append(
-      v1, v2, v3, color
+      v1, v2, v3, color, textC
     );
     this.tris.append(
-      v1, v3, v4, color
+      v1, v3, v4, color, textC
     );
   }
 
@@ -163,6 +165,14 @@ class Triangle extends Polygon {
     return this;
   }
 
+  calcUv(x, y, s) {
+    console.log(this.d_t, x, y);
+    this.t.calcUv(x, y, s);
+    this.l.calcUv(x, y, s);
+    this.r.calcUv(x, y, s);
+    return this;
+  }
+
   clone() {
       return new Triangle(this.d_t, this.d_l, this.d_r);
   }
@@ -182,8 +192,8 @@ class Triangle extends Polygon {
     return this._r;
   }
 
-  appendTo(triBuilder, color) {
-    triBuilder.append(this.d_t,this.d_l,this.d_r,color);
+  appendTo(triBuilder, color, textC) {
+    triBuilder.append(this.d_t,this.d_l,this.d_r,color, textC);
   }
 }
 
@@ -191,11 +201,20 @@ class Quad extends Polygon {
   constructor(s, other) {
     super();
     this.s = s;
-    this.d_bl = other ? other.d_bl.slice() : [-s, -s, s];
-    this.d_br = other ? other.d_br.slice() : [s, -s, s];
-    this.d_ur = other ? other.d_ur.slice() : [s, s, s];
-    this.d_ul = other ? other.d_ul.slice() : [-s, s, s];
+    this.d_bl = other ? other.d_bl.slice() : [-s, -s, s, 0, 0];
+    this.d_br = other ? other.d_br.slice() : [s, -s, s, 0, 1];
+    this.d_ur = other ? other.d_ur.slice() : [s, s, s, 1, 1];
+    this.d_ul = other ? other.d_ul.slice() : [-s, s, s, 1, 0];
     this.points = [this.d_bl, this.d_br, this.d_ur, this.d_ul];
+  }
+
+  calcUv(x, y, s) {
+    //return this;
+    this.ul.calcUv(x, y, s);
+    this.ur.calcUv(x, y, s);
+    this.bl.calcUv(x, y, s);
+    this.br.calcUv(x, y, s);
+    return this;
   }
 
   add(x, y, z) {
@@ -232,95 +251,7 @@ class Quad extends Polygon {
     return this._bl;
   }
 
-  appendTo(quadBuilder, color) {
-    quadBuilder.append(this.d_bl,this.d_br,this.d_ur,this.d_ul, color);
+  appendTo(quadBuilder, color, textC) {
+    quadBuilder.append(this.d_bl,this.d_br,this.d_ur,this.d_ul, color, textC);
   }
-}
-
-class CubeBuilder {
-
-
-  constructor(unit, data, quads) {
-    this.unitSize = unit === undefined ? 1.0 : unit;
-    this.data = data ? data : new MeshData();
-  }
-
-  fbl() {
-    const s = this.unitSize;
-    return [-s, -s, s];
-  }
-
-  fbr() {
-    const s = this.unitSize;
-    return [s, -s, s];
-  }
-
-  fur() {
-    const s = this.unitSize;
-    return [s, s, s];
-  }
-
-  ful() {
-    const s = this.unitSize;
-    return [-s, s, s];
-  }
-
-  bbl() {
-    const s = this.unitSize;
-    return [-s, -s, -s];
-  }
-
-  bbr() {
-    const s = this.unitSize;
-    return [s, -s, -s];
-  }
-
-  bur() {
-    const s = this.unitSize;
-    return [s, s, -s];
-  }
-
-  bul() {
-    const s = this.unitSize;
-   return [-s, s, -s];
-  }
-
-  /**
-
-  frontFace(color) { // Front face
-    const q = new QuadBuilder(this.data);
-    q.fillIndices();
-    q.fillColor(color);
-    this.fbl().fbr().fur().ful();
-  }
-
-  backFace(color) {
-    this.fillQuadIndices();
-    this.bbl().bul().bur().bbr();
-    this.fillQuadColor(color);
-  }
-
-  topFace(color) {
-    this.fillQuadIndices();
-    this.bul().ful().fur().bur();
-    this.fillQuadColor(color);
-  }
-
-  bottomFace(color) {
-    this.fillQuadIndices();
-    this.bbl().bbr().fbr().fbl();
-    this.fillQuadColor(color);
-  }
-
-  rightFace(color) {
-    this.fillQuadIndices();
-    this.bbr().bur().fur().fbr();
-    this.fillQuadColor(color);
-  }
-
-  leftFace(color) {
-    this.fillQuadIndices();
-    this.bbl().fbl().ful().bul();
-    this.fillQuadColor(color);
-  } */
 }

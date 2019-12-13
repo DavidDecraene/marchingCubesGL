@@ -14,6 +14,21 @@ var BitFlags = {
 
 };
 
+var LVecs = {
+  add: function(result, target) {
+      result[0] += target[0];
+      result[1] += target[1];
+      result[2] += target[2];
+      return result;
+  },
+  rescale: function(value, fromRange, toRange) {
+    if (!value) { value = 0; }
+    const a = (value - fromRange[0]) / (fromRange[1] - fromRange[0]);
+    const b = toRange[1] - toRange[0];
+    return a * b + toRange[0];
+  }
+};
+
 class LVec {
   constructor(data) {
     this.data = data;
@@ -23,6 +38,13 @@ class LVec {
     if(x) this.data[0] += x;
     if(y) this.data[1] += y;
     if(z) this.data[2] += z;
+    return this;
+  }
+
+  calcUv(x, y, s) {
+    this.data[3] =  (this.data[x] + s) / (2 * s);
+    // problem is: bot left is zero, so 1 becomes zero and zero becomes one
+    this.data[4] =  1 - (this.data[y] + s) / (2 * s);
     return this;
   }
 
@@ -44,10 +66,20 @@ class LVec {
     return this;
   }
 
+  u(u) {
+    if (u === undefined) return this.data[3];
+    this.data[3] = u;
+    return this;
+  }
+
+  v(v) {
+    if (v === undefined) return this.data[4];
+    this.data[4] = v;
+    return this;
+  }
+
   copy(other) {
-    this.data[0] = other.data[0];
-    this.data[1] = other.data[1];
-    this.data[2] = other.data[2];
+    this.data = other.data.slice();
     return this;
   }
 
@@ -82,6 +114,30 @@ class VoxelSector {
     return Object.keys(this.values.values).map(k => {
       const idx = FlattenUtils.fromIndex(k, this.sectorSize);
       return FlattenUtils.unsplit(this.index, idx, this.sectorSize);
+    });
+  }
+}
+
+class VoxelSet {
+  constructor() {
+    this.values = [];
+  }
+
+  translate(x, y, z) {
+    this.values.forEach(v => {
+      v.v[0] += x ? x : 0;
+      v.v[1] += y ? y : 0;
+      v.v[2] += z ? z : 0;
+    });
+  }
+
+  setVoxel(vector, data) {
+    this.values.push({ v: vector, d: data});
+  }
+
+  appendTo(model) {
+    this.values.forEach(v => {
+      model.setVoxel(v.v, v.d);
     });
   }
 }

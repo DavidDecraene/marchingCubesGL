@@ -17,6 +17,7 @@
 <script src="src/quad.js"></script>
 <script src="src/voxel.js"></script>
 <script src="src/voxel.builder.js"></script>
+<script src="src/texture.js"></script>
 <script id="2d-vertex-shader" type="x-shader/x-vertex">
   attribute vec4 aVertexPosition;
 
@@ -58,6 +59,36 @@ varying lowp vec4 vColor;
 
 void main() {
    gl_FragColor = vColor;
+}
+</script>
+
+<script id="2d-vertex-color-texture-shader" type="x-shader/x-vertex">
+  attribute vec4 aVertexPosition;
+  attribute vec4 aVertexColor;
+  attribute vec2 a_texcoord;
+
+  uniform mat4 uModelViewMatrix;
+  uniform mat4 uProjectionMatrix;
+
+
+  varying lowp vec4 vColor;
+  varying lowp vec2 v_texcoord;
+
+  void main() {
+    gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
+    vColor = aVertexColor;
+    v_texcoord = a_texcoord;
+  }
+  </script>
+<script id="2d-fragment-vertexcolor-texture-shader" type="x-shader/x-fragment">
+varying lowp vec4 vColor;
+varying lowp vec2 v_texcoord;
+
+uniform sampler2D u_texture;
+
+void main() {
+ // gl_FragColor = vColor;
+ gl_FragColor = texture2D(u_texture, v_texcoord);
 }
 </script>
 
