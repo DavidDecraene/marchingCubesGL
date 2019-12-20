@@ -55,7 +55,7 @@ lModel.setVoxel(vec3.fromValues(-1, -1, 0), { type: 1 });
 lModel.translate(5, 3);
 lModel.appendTo(voxelModel);
 
-var currentMode = 1; //2;
+var currentMode = 2; //2;
 var currentInset = 0.3;
 
 var textureMap = [

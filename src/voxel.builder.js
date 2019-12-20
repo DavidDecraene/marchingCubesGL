@@ -559,15 +559,23 @@ class VoxelBuilder {
           r.quad(p.rotateZ(rotation));
           r.quad(rTop.rotateZ(rotation)); // bevel border right block top
           break;
-        case 15:
+        case 15: // All sides
           middle.ul.add(s, -s);
           middle.ur.add(-s, -s);
           middle.bl.add(s, s);
           middle.br.add(-s, s);
           const right15 = middle.clone().add(s);
+          right15.ul.x(right15.ur.x() - s);
+          right15.bl.x(right15.br.x() - s);
           const left15 = middle.clone().add(-s);
+          left15.ur.x(left15.ul.x() + s);
+          left15.br.x(left15.bl.x() + s);
           const top15 = middle.clone().add(0, s);
+          top15.bl.y(top15.ul.y() - s);
+          top15.br.y(top15.ur.y() - s);
           const bot15 = middle.clone().add(0, -s);
+          bot15.ul.y(bot15.bl.y() + s);
+          bot15.ur.y(bot15.br.y() + s);
           const leftP = this.createInnerBevelBorder(false);
           const ps = [leftP];
           ps[1] = leftP.clone().rotateZ(90);
