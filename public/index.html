@@ -1,23 +1,14 @@
 
 <!DOCTYPE html>
-<html>
-
+<html  lang="en">
 <head>
   <meta charset="utf-8">
   <title>gl test</title>
-  <base href="./">
+  <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="theme-color" content="#000000" />
   <meta name="keywords" content="">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js" integrity="sha256-+09xst+d1zIS41eAvRDCXOf0MH993E4cS40hKBIJj8Q=" crossorigin="anonymous"></script>
-<script src="src/shader.utils.js"></script>
-<script src="src/canvas.js"></script>
-<script src="src/camera.js"></script>
-<script src="src/mesh.js"></script>
-<script src="src/node.js"></script>
-<script src="src/quad.js"></script>
-<script src="src/voxel.js"></script>
-<script src="src/voxel.builder.js"></script>
-<script src="src/texture.js"></script>
+  <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
 <script id="2d-vertex-shader" type="x-shader/x-vertex">
   attribute vec4 aVertexPosition;
 
@@ -97,11 +88,10 @@ void main() {
 <body>
   <h4>OpenGl Voxel (Boxel) Experiment</h4>
   <canvas width="1200" height="800" id="canvas"></canvas>
-  <script type="text/javascript" src="./main.js"></script>
   <div>
-    <button onclick="toggleMode()">Toggle Mode</button> (Beveled Cubes - Plain Cubes)
+    <button onclick="toggleMode()">Toggle Mode</button>
   </div>
-  <p>Beveled Cube Mode: Work in Progress.</p>
+  <div id="root"></div>
 </body>
 
 </html>

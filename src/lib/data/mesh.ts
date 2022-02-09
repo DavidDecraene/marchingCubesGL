@@ -1,42 +1,57 @@
-/*jshint esversion: 6 */
+import { vec4, vec3 } from 'gl-matrix';
+import { IVector2 } from './Vector2';
 
-class MeshData {
+export class MeshData {
+  public readonly uv: Array<number> = [];
+  public readonly points: Array<number> = [];
+  public readonly colors: Array<number> = [];
+  public readonly normals: Array<vec3> = [];
+  public readonly indices: Array<number> = [];
   constructor() {
-    this.points = [];
-    this.colors = [];
-    this.indices = [];
-    this.normals = [];
-    this.uv = [];
   }
+
+  public addColor(color: vec4) {
+    this.colors.push(color[0]);
+    this.colors.push(color[1]);
+    this.colors.push(color[2]);
+    this.colors.push(color[3]);
+  }
+
+  public addUV(v: IVector2){
+    this.uv.push(v.x);
+    this.uv.push(v.y);
+  }
+
+
 
 }
 
-class GLMesh {
-  constructor(gl, meshData) {
-    this.gl = gl;
-    this.data = meshData;
+export class GLMesh {
+  private buffers: any = {};
+  private xx = false;
+  constructor(public readonly gl: WebGLRenderingContext, public data = new MeshData()) {
   }
 
   createBuffers() {
     const uvBuffer = this.gl.createBuffer();
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, uvBuffer);
     this.gl.bufferData(
-        this.gl.ARRAY_BUFFER,
-        new Float32Array(this.data.uv),
-        this.gl.STATIC_DRAW);
+      this.gl.ARRAY_BUFFER,
+      new Float32Array(this.data.uv),
+      this.gl.STATIC_DRAW);
 
     const posBuffer = this.gl.createBuffer();
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, posBuffer);
     this.gl.bufferData(
-        this.gl.ARRAY_BUFFER,
-        new Float32Array(this.data.points),
-        this.gl.STATIC_DRAW);
+      this.gl.ARRAY_BUFFER,
+      new Float32Array(this.data.points),
+      this.gl.STATIC_DRAW);
     const colBuffer = this.gl.createBuffer();
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, colBuffer);
     this.gl.bufferData(
-        this.gl.ARRAY_BUFFER,
-        new Float32Array(this.data.colors),
-        this.gl.STATIC_DRAW);
+      this.gl.ARRAY_BUFFER,
+      new Float32Array(this.data.colors),
+      this.gl.STATIC_DRAW);
     const indexBuffer = this.gl.createBuffer();
     this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER,
@@ -50,8 +65,8 @@ class GLMesh {
     return this.buffers;
   }
 
-  drawBuffers(programInfo) {
-    if (!this.xx)  { console.log(this.data.uv); this.xx = true; }
+  drawBuffers(programInfo: any) {
+    if (!this.xx) { this.xx = true; }
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffers.uv);
     this.gl.vertexAttribPointer(programInfo.uv, 2, this.gl.FLOAT, false, 0, 0);
     this.gl.enableVertexAttribArray(programInfo.uv);
@@ -62,8 +77,8 @@ class GLMesh {
     this.gl.enableVertexAttribArray(programInfo.position);
 
 
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffers.colors);
-        this.gl.vertexAttribPointer(programInfo.colors, 4, this.gl.FLOAT, false, 0, 0);
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffers.colors);
+    this.gl.vertexAttribPointer(programInfo.colors, 4, this.gl.FLOAT, false, 0, 0);
     this.gl.enableVertexAttribArray(programInfo.colors);
     // Tell WebGL which indices to use to index the vertices
 
