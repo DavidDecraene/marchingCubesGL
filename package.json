@@ -1,8 +1,9 @@
 {
   "name": "marchingcubesgl",
   "version": "1.0.0",
-  "homepage": "https://daviddecraene.github.io/marchingCubesGL/build/",
-  "description": "Experiment with OpenGL and Voxel/Boxel rendering.",
+  "homepage": ".",
+  "description": "Experiment with OpenGL and Voxel/Boxel rendering.
+  homepage https://daviddecraene.github.io/marchingCubesGL/build/ ",
   "private": true,
   "dependencies": {
     "gl-matrix": "^3.4.3"
