@@ -1,6 +1,7 @@
 {
   "name": "marchingcubesgl",
   "version": "1.0.0",
+  "homepage": ".",
   "description": "Experiment with OpenGL and Voxel/Boxel rendering.",
   "private": true,
   "dependencies": {
