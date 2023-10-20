@@ -9,7 +9,7 @@ export class GLShaderUtils {
       (document.getElementById(fsId) as HTMLScriptElement).text);
   }
 
-  initShaderProgram(vsSource: string, fsSource: string) {
+  initShaderProgram(vsSource: string, fsSource: string): WebGLProgram {
     const vertexShader = this.loadShader(this.gl.VERTEX_SHADER, vsSource) as WebGLShader;
     const fragmentShader = this.loadShader(this.gl.FRAGMENT_SHADER, fsSource) as WebGLShader;
     // Create the shader program
@@ -19,8 +19,7 @@ export class GLShaderUtils {
     this.gl.linkProgram(shaderProgram);
     // If creating the shader program failed, alert
     if (!this.gl.getProgramParameter(shaderProgram, this.gl.LINK_STATUS)) {
-      console.error('Unable to initialize the shader program: ' + this.gl.getProgramInfoLog(shaderProgram));
-      return null;
+      throw 'Unable to initialize the shader program: ' + this.gl.getProgramInfoLog(shaderProgram);
     }
     return shaderProgram;
   }
@@ -33,7 +32,7 @@ export class GLShaderUtils {
     this.gl.compileShader(shader);
     // See if it compiled successfully
     if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
-      console.error('An error occurred compiling the shaders: ' + this.gl.getShaderInfoLog(shader));
+      console.error('An error occurred compiling the shaders: ' + this.gl.getShaderInfoLog(shader), source);
       this.gl.deleteShader(shader);
       return null;
     }

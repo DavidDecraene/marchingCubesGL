@@ -1,155 +1,193 @@
-import { vec3 } from 'gl-matrix';
 import { VoxelBuilder } from './builder/voxel.builder';
 import { GLCamera } from './camera';
 import { GLCanvas } from './canvas';
 import { GLMesh } from './data/mesh';
-import { GLNode } from './data/node';
-import { TexCoords } from './data/TexCoords';
-import { Texture } from './data/texture';
-import { VoxelModel } from './data/voxel.model';
-import { VoxelType } from './data/voxel.type';
+import { GLNode, RootNode } from './data/node';
+import { Texture, TextureArray } from './data/texture';
+import { VoxelModel } from './data/voxels/voxel.model';
 import { GLShaderUtils } from './shader.utils';
+import { defer, Observable, scheduled, asyncScheduler } from 'rxjs';
+import { switchMap, mergeAll, tap } from 'rxjs/operators';
+import { CubeSideMaterial } from './assets/cube.side.material';
+import { Vector3 } from './data/Vector3';
+import { VoxelTypes } from './data/voxels/voxel.types';
+import { TextureArrayMaterial } from './assets/texture.array.material';
+import { ArrayTypeBuilder as TypeBuilder } from './data/voxels/voxel.type.builder';
+import { RenderLoop } from './data/render/RenderLoop';
+import { Ray } from './data/raycast/ray';
+import { TreeBuilder } from './data/voxels/builders/tree.builder';
+import { LightCalculator } from './data/lighting/LightCalculator';
+import { World } from './world/World';
+import { GameManager } from './world/GameManager';
 
+
+function loadShader(url: string): Observable<string> {
+  return defer(() => fetch(url)).pipe(switchMap(d => d.text()));
+}
 
 export function main() {
-
-  const canvas = new GLCanvas(document.getElementById("canvas") as HTMLCanvasElement);
-
-
-  const gl = canvas.gl;
-  /**
-  let program = new GLShaderUtils(canvas.gl)
-    .initShaderProgramFromScript('2d-vertex-color-shader',
-     '2d-fragment-vertexcolor-shader') as WebGLProgram;*/
-
-  let program2 = new GLShaderUtils(canvas.gl)
-    .initShaderProgramFromScript('2d-vertex-color-texture-shader',
-     '2d-fragment-vertexcolor-texture-shader') as WebGLProgram ;
+  const shaders = {
+    vertexShader: "",
+    fragmentShader: "",
+    arrayVertexShader: "",
+    arrayFragmentShader: ""
+  }
 
 
-  const voxelModel = new VoxelModel(vec3.fromValues(16, 16, 16));
+  const operations = [
+    loadShader("./shaders/textured.vertex.shader.glsl").pipe(tap(t => shaders.vertexShader = t)),
+    loadShader("./shaders/textured.fragment.shader.glsl").pipe(tap(t => shaders.fragmentShader = t)),
+      loadShader("./shaders/textureArray.vertex.shader.glsl").pipe(tap(t => shaders.arrayVertexShader = t)),
+      loadShader("./shaders/textureArray.fragment.shader.glsl").pipe(tap(t => shaders.arrayFragmentShader = t))
+  ];
 
-  voxelModel.setVoxel(vec3.fromValues(0, 0, 0), { type: 1 });
+  scheduled(operations, asyncScheduler).pipe(mergeAll(5)).subscribe({
+    error: r => console.error(r),
+    complete: () => {
+      // start everything
 
-
-  voxelModel.setVoxel(vec3.fromValues(0, 1, 0), { type: 1 });
-  voxelModel.setVoxel(vec3.fromValues(1, 0, 0), { type: 1 });
-  voxelModel.setVoxel(vec3.fromValues(0, -1, 0), { type: 1 });
-  voxelModel.setVoxel(vec3.fromValues(-1, 0, 0), { type: 1 });
-  voxelModel.setVoxel(vec3.fromValues(-2, 0, 0), { type: 1 });
-  voxelModel.setVoxel(vec3.fromValues(-3, 0, 0), { type: 1 });
-  voxelModel.setVoxel(vec3.fromValues(-3, -1, 0), { type: 1 });
-  voxelModel.setVoxel(vec3.fromValues(-3, 0, -1), { type: 1 });
-  voxelModel.setVoxel(vec3.fromValues(-3, 0, 1), { type: 1 });
-
-  voxelModel.setVoxel(vec3.fromValues(0, 3, 0), { type: 1 });
-  voxelModel.setVoxel(vec3.fromValues(0, -3, 0), { type: 1 });
-  voxelModel.setVoxel(vec3.fromValues(0, -4, 0), { type: 1 });
-  voxelModel.setVoxel(vec3.fromValues(1, -3, 0), { type: 1 });
-  voxelModel.setVoxel(vec3.fromValues(1, -4, 0), { type: 1 });
+      const canvas = new GLCanvas(document.getElementById("canvas") as HTMLCanvasElement);
 
 
-  voxelModel.setVoxel(vec3.fromValues(3, 0, 0), { type: 1 });
-  voxelModel.setVoxel(vec3.fromValues(4, 0, 0), { type: 1 });
-  voxelModel.setVoxel(vec3.fromValues(3, 1, 0), { type: 1 });
-  voxelModel.setVoxel(vec3.fromValues(4, 1, 0), { type: 1 });
-  voxelModel.setVoxel(vec3.fromValues(3, 0, 1), { type: 1 });
-  voxelModel.setVoxel(vec3.fromValues(4, 0, 1), { type: 1 });
-  voxelModel.setVoxel(vec3.fromValues(4, 1, 1), { type: 1 });
+      const gl = canvas.gl;
+      gl.enable(gl.CULL_FACE);
+
+/**
+ gl.enable(gl.DEPTH_TEST);
+ gl.depthFunc(gl.LEQUAL)
+ gl.depthMask(false); */
+ gl.enable(gl.BLEND);
+ // ONE_MINUS_SRC_ALPHA
+ //gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+ gl.blendFunc(gl.SRC_ALPHA, gl.SRC_ALPHA_SATURATE);
+
+
+      const typeDB = new VoxelTypes();
+      const [grass, dirt, wood, leaves] = [1, 2, 3, 4];
+
+      const textureArray = new TextureArray(gl, ['./textures/sprite_2.png',
+    './textures/sprite_1.png',
+  './textures/sprite_0.png',
+'./textures/bark_8.png',
+'./textures/leaves_8_TP.png']);
+      typeDB.addType(new TypeBuilder(0).sides(2).top(1).build(grass));
+      typeDB.addType(new TypeBuilder(0).build(dirt));
+      typeDB.addType(new TypeBuilder(3).build(wood));
+      typeDB.addType(new TypeBuilder(4).transparent().build(leaves));
+      const voxelModel = new VoxelModel(Vector3.of(16, 16, 16), typeDB);
+
+      const bounds = {
+        min: Vector3.of(0, 0, 0),
+        max: Vector3.of(8, 8, 8)
+      }
+      for( let x = bounds.min.x; x <= bounds.max.x; x++) {
+          for(let z = bounds.min.z; z <= bounds.max.z; z++){
+            //voxelModel.setVoxel(Vector3.of(x, -1, z), { type: 2 });
+            voxelModel.setVoxel(Vector3.of(x, 0, z), { type: dirt });
+            voxelModel.setVoxel(Vector3.of(x, 1, z), { type: dirt });
+            voxelModel.setVoxel(Vector3.of(x, 2, z), { type: grass });
+          }
+
+      }
+
+      const treeBuilder = new TreeBuilder(() => {
+        return { type: leaves };
+      }, () => {
+          return { type: wood };
+       });
+      treeBuilder.buildAt(Vector3.of(5, 3, 5), voxelModel);
+
+      let currentMode = 1;
+      let currentInset = 0.3;
+
+
+      const texture = new Texture(gl, './textures/CubeSides.png');
+
+      const shaderPrograms = {
+        cubeShader: new GLShaderUtils(canvas.gl)
+          .initShaderProgram(shaders.vertexShader,
+           shaders.fragmentShader),
+        arrayShader: new GLShaderUtils(canvas.gl)
+             .initShaderProgram(shaders.arrayVertexShader,
+              shaders.arrayFragmentShader)
+      }
+      const materials = {
+        cubeSides: new CubeSideMaterial(shaderPrograms.cubeShader, gl, texture),
+        textureArray: new TextureArrayMaterial(shaderPrograms.arrayShader, gl, textureArray)
+      }
+      const mesh = new GLMesh(gl);
+      const lightCalc =   new LightCalculator();
+    //  mesh.material = materials.cubeSides;
+       mesh.material = materials.textureArray;
+      function updateMesh(mode: number, mesh: GLMesh) {
+        const voxelBuilder2 = new VoxelBuilder(voxelModel, typeDB);
+        voxelBuilder2.mode = mode;
+        voxelBuilder2.inset = currentInset;
+        voxelModel.getSectors().forEach(sector => {
+          if (sector.voxelCount) {
+            sector.lightData = lightCalc.calculate(sector);
+          }
+
+          sector.values.forEach(v => {
+            voxelBuilder2.append(v.position, v.voxel);
+          });
+        });
+        mesh.data = voxelBuilder2.data;
+        mesh.createBuffers();
+      }
+      updateMesh(currentMode, mesh);
+      const camera = new GLCamera(gl);
+      const worldNode = new RootNode();
+      const rotationNode = new GLNode().appendTo(worldNode);
+
+      worldNode.onWorldMatrixChange.subscribe(mat => camera.updateWorldMatrix(mat));
+      const node = new GLNode().appendTo(rotationNode);
+      node.mesh = mesh;
 
 
 
-  let currentMode = 1;
-  let currentInset = 0.3;
+      const scale = 1/4;
+      Vector3.copyTo(Vector3.of(scale, scale, scale), worldNode.localScale);
+      //worldNode.localTranslation.x = -4.0;
+      worldNode.localTranslation.y = 0.5;
+      worldNode.localTranslation.z = -6.0;
+      worldNode.localRotation.x = Math.PI * 35/180;
+        //worldNode.localTranslation.x = -4.0;
+      rotationNode.localRotation.y = Math.PI * -45/180;
 
-  const texture = new Texture(gl, './CubeSides.png');
-  const cubeType = new VoxelType(1, texture, [
-    new TexCoords(0, 0, 1/3), // front
-    new TexCoords(1/3, 0, 1/3),//back
-    new TexCoords(2/3, 0, 1/3),//top
-    new TexCoords(0, 1/3, 1/3),//bot
-    new TexCoords(1/3, 1/3, 1/3),//right
-    new TexCoords(2/3, 1/3, 1/3)//left
-  ]);
-  const mesh = new GLMesh(gl);
-  function updateMesh(mode: number) {
-    const voxelBuilder2 = new VoxelBuilder(voxelModel, cubeType);
-    voxelBuilder2.mode = mode;
-    voxelBuilder2.inset = currentInset;
-    voxelModel.getSectors().forEach(sector => {
-      sector.getVoxels().forEach(v => {
-        voxelBuilder2.append(v as vec3);
+      const world = new World();
+
+      GameManager.setWorld(world);
+
+      const ray = new Ray();
+
+      canvas.onClick.subscribe(v => {
+        ray.update(canvas.toClipSpace(v), camera.inverseViewProjectionMatrix);
+        console.log("ray", ray);
+
       });
-    });
-    mesh.data = voxelBuilder2.data;
-    mesh.createBuffers();
-  }
-  updateMesh(currentMode);
-  const camera = new GLCamera(gl);
-  const programToUse = program2;
-  // look up where the vertex data needs to go.
-  var programInfo = {
-    program: programToUse,
-    position: gl.getAttribLocation(programToUse, "aVertexPosition"),
-    colors: gl.getAttribLocation(programToUse, "aVertexColor"),
-    color: gl.getUniformLocation(programToUse, "u_color"),
-    texture: gl.getUniformLocation(programToUse, "u_texture"),
-    camera: gl.getUniformLocation(programToUse, 'uProjectionMatrix'),
-    worldView: gl.getUniformLocation(programToUse, 'uModelViewMatrix'),
-    uv: gl.getAttribLocation(programToUse, "a_texcoord"),
-    glCamera: camera
-  };
-  const worldNode = new GLNode();
-  const node = new GLNode().appendTo(worldNode);
-  node.mesh = mesh;
+
+      //console.log(sunLight, sunLight.update());
 
 
+      const renderLoop = new RenderLoop(() => {
 
-  function toggleMode() {
-    let n = 0;
-    switch(currentMode) {
-      case 1: n = 2; break;
-      case 2: n = 0; break;
-      case 0: n = 1; break;
+        GameManager.update();
+        world.update();
+        Vector3.copyTo(world.lightColor, materials.textureArray.lightColor);
+        Vector3.copyTo(world.lightColor, canvas.clearColor);
+
+
+        canvas.clearRect();
+        worldNode.updateAll();
+        worldNode.draw({
+          gl, camera, world
+        });
+
+      });
+      renderLoop.start();
+
     }
-    currentMode = n;
-    updateMesh(currentMode);
-  }
-
-  // Actual drawing:
-  //
-  let squareRotation = 0;
-  let rotChange = 0.5;
-  let tempRotation = vec3.fromValues(0, 0, 0);
-
-
-  function drawScene() {
-
-    canvas.clearRect();
-
-    worldNode.localTranslation[2] = -9.0;
-    node.localTranslation[1] = 0.5;
-
-    node.localRotation = tempRotation;
-    if (squareRotation) {
-      node.localRotation[2] = squareRotation;
-      node.localRotation[1] = squareRotation * 0.7;
-    }
-
-    worldNode.updateAll();
-    worldNode.draw(gl, programInfo);
-  }
-
-  let then = 0;
-
-  function render(now: number) {
-    now *= 0.001;  // convert to seconds
-    const deltaTime = now - then;
-    then = now;
-    squareRotation += deltaTime *  rotChange;
-    drawScene();
-    requestAnimationFrame(render);
-  }
-  requestAnimationFrame(render);
+  });
 
 }

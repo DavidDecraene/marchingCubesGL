@@ -1,3 +1,4 @@
+import { States } from "../constants/states";
 import { Quad } from "../data/Quad";
 import { Triangle } from "../data/Triangle";
 import { VoxelBuilder } from "./voxel.builder";
@@ -42,7 +43,7 @@ export class BeveledFaceBuilder {
     const middle = new Quad(u);
     let rotation = 0;
     let botQuad;
-    const genTris = side === 0 || side === 1;
+    const genTris = side === States.front || side === States.back;
     // do we need to draw the bot corners..
     switch(flag) {
       case 0: // No neighbours. All outer corners..

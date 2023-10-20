@@ -2,7 +2,7 @@ import { Polygon } from "./Polygon";
 import { vec4 } from 'gl-matrix';
 import { LVec } from "../utils/lvec";
 import { TriangleBuilder } from "../builder/triangle.builder";
-import { TexCoords } from "./TexCoords";
+import { ITexCoord } from "./TexCoords";
 
 export class Triangle extends Polygon {
   private d_t: Array<number>;
@@ -53,7 +53,7 @@ export class Triangle extends Polygon {
       return new Triangle(this.d_t, this.d_l, this.d_r);
   }
 
-  appendTo(triBuilder: TriangleBuilder, color: vec4, textC: TexCoords) {
+  appendTo(triBuilder: TriangleBuilder, color: vec4, textC: ITexCoord) {
     triBuilder.append(this.d_t,this.d_l,this.d_r,color, textC);
   }
 }

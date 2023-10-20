@@ -2,11 +2,10 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import reportWebVitals from './reportWebVitals';
 import { main } from './lib/main';
+import { App } from './components/app';
 
 ReactDOM.render(
-  <React.StrictMode>
-    <div></div>
-  </React.StrictMode>,
+    <App></App>,
   document.getElementById('root')
 );
 main();

@@ -1,5 +1,7 @@
-import { TexCoords } from "./TexCoords";
-import { Texture } from "./texture";
+import { ITexCoord } from "../TexCoords";
+import { ITypeFilter } from "./builders/side.filter";
+
+
 
 export class VoxelType {
 
@@ -14,8 +16,9 @@ export class VoxelType {
   ];
 
   constructor(public readonly type: number,
-    public readonly texture: Texture,
-    public readonly texCoords: Array<TexCoords>) {
+    public readonly texCoords: Array<ITexCoord>,
+    public readonly layer = 0,
+    public sideFilter: ITypeFilter) {
     // front, back, top, bot, right, left
   }
 }

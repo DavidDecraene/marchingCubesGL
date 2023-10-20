@@ -1,10 +1,13 @@
-import { vec3, mat4, quat2 } from 'gl-matrix';
+import { mat4, quat2 } from 'gl-matrix';
+import { Subject } from 'rxjs';
 import { GLMesh } from './mesh';
+import { RenderContext } from './RenderContext';
+import {  ObservableVector3 } from './Vector3';
 
 export class GLNode {
-  public localTranslation = vec3.fromValues(0, 0, 0);
-  public localRotation = vec3.fromValues(0, 0, 0);
-  public localScale = vec3.fromValues(1, 1, 1);
+  public readonly localTranslation = new ObservableVector3(0, 0, 0);
+  public readonly localRotation = new ObservableVector3(0, 0, 0);
+  public readonly localScale = new ObservableVector3(1, 1, 1);
   public localMatrix = mat4.create();
   public worldMatrix = mat4.create();
   public children: Array<GLNode> = [];
@@ -12,27 +15,18 @@ export class GLNode {
   public mesh: GLMesh | undefined;
   public parent: GLNode | undefined;
 
+  public onWorldMatrixChange = new Subject<mat4>();
+
   constructor() {
   }
 
 
-  draw(gl: WebGLRenderingContext, programInfo: any) {
+  draw(context: RenderContext) {
     this.children.forEach(child => {
-      child.draw(gl, programInfo);
+      child.draw(context);
     });
-    if (this.mesh) {
-      gl.useProgram(programInfo.program);
-
-      gl.uniformMatrix4fv(
-           programInfo.camera,
-           false,
-           programInfo.glCamera.projectionMatrix);
-       gl.uniformMatrix4fv(
-           programInfo.worldView,
-           false,
-           this.worldMatrix);
-
-      this.mesh.drawBuffers(programInfo);
+    if (this.mesh && this.mesh.material) {
+      this.mesh.material.renderMesh(this, this.mesh, context);
     }
   }
 
@@ -47,37 +41,44 @@ export class GLNode {
     return this;
   }
 
-  updateLocalMatrix() {
+  updateMatrices() {
+    const rotChange = this.localRotation.consume();
+    const tChange = this.localTranslation.consume();
+    if(!this.localScale.consume() && !rotChange && !tChange) {
+      return;
+    }
+
     const quat = quat2.create();
-    if (this.localRotation[0]) {
-      quat2.rotateX(quat, quat, this.localRotation[0]);
+    if (this.localRotation.x) {
+      quat2.rotateX(quat, quat, this.localRotation.x);
     }
-    if (this.localRotation[1]) {
-      quat2.rotateY(quat, quat, this.localRotation[1]);
+    if (this.localRotation.y) {
+      quat2.rotateY(quat, quat, this.localRotation.y);
     }
-    if (this.localRotation[2]) {
-      quat2.rotateZ(quat, quat, this.localRotation[2]);
+    if (this.localRotation.z) {
+      quat2.rotateZ(quat, quat, this.localRotation.z);
     }
     // mat4.fromTranslation(this.localMatrix, this.localTranslation);
-    mat4.fromRotationTranslationScale(this.localMatrix, quat, this.localTranslation, this.localScale);
-  }
+    mat4.fromRotationTranslationScale(this.localMatrix, quat,
+      this.localTranslation.vec3(),
+      this.localScale.vec3());
 
-  updateWorldMatrix() {
     if (!this.parent) {
       mat4.copy(this.worldMatrix, this.localMatrix);
+      this.onWorldMatrixChange.next(this.worldMatrix);
       return;
     }
     mat4.multiply(this.worldMatrix, this.parent.worldMatrix, this.localMatrix);
-  }
-
-  updateMatrices() {
-    this.updateLocalMatrix();
-    this.updateWorldMatrix();
+    this.onWorldMatrixChange.next(this.worldMatrix);
   }
 
   updateAll() {
     this.updateMatrices();
     this.children.forEach(c => c.updateAll());
   }
+
+}
+
+export class RootNode extends GLNode {
 
 }

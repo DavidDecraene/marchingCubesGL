@@ -1,37 +1,50 @@
 import { MeshData } from "../data/mesh";
-import { VoxelModel } from "../data/voxel.model";
-import { VoxelState } from "../voxel.state";
+import { VoxelModel } from "../data/voxels/voxel.model";
+import { VoxelState } from "../data/voxels/voxel.state";
 import { QuadBuilder } from "./quad.builder";
 import { TriangleBuilder } from "./triangle.builder";
-import { vec3, vec4 } from 'gl-matrix';
+import { vec4 } from 'gl-matrix';
 import { Quad } from "../data/Quad";
 import { Triangle } from "../data/Triangle";
-import { BitFlags } from "../utils/BitFlag";
-import { VoxelType } from "../data/voxel.type";
+import { BitFlag } from "wombat-math";
 import { Faces, FaceType} from '../constants/states';
 import { PlainFaceBuilder } from "./plain.face.builder";
 import { BeveledFaceBuilder } from "./beveled.face.builder";
+import { IVector3, Vector3 } from "../data/Vector3";
+import { IVoxel } from "../data/voxels/voxel";
+import { VoxelTypes } from "../data/voxels/voxel.types";
+import { AOCalculater } from "./ambient.occlussion";
 
 export class VoxelBuilder {
   public mode = 1; // beveled cube, only indented corners
   //this.mode = 2; // beveled cube,  indented corners an borders
   public data = new MeshData();
   public unitSize = 0.5;
-  public tris = new TriangleBuilder(this.data);
+  private aoCalculation = new AOCalculater();
+  public tris = new TriangleBuilder(this.data, v => {
+    const ao = this.aoCalculation.calculateOcclusion(v);
+    const light = this.aoCalculation.getLightLevel() / 15;
+    //const light = this.aoCalculation.state?.vector
+    return Vector3.of(ao / 3, light, 1);
+  });
   public quads = new QuadBuilder(this.data, this.tris);
   public inset = 0.1;
 
   private plainFaceBuilder = new PlainFaceBuilder(this);
   private beveledFaceBuilder = new BeveledFaceBuilder(this);
 
-  constructor(public readonly model: VoxelModel, public voxelType: VoxelType) {
+  constructor(public readonly model: VoxelModel,
+    public readonly voxelTypes: VoxelTypes) {
 
   }
 
-  public append(vector: vec3) {
-    const state = new VoxelState(vector, this.model);
-    if (!state.voxel) return;
+  public append(vector: IVector3, voxel: IVoxel) {
+    if(!voxel) return;
+    const voxelType = this.voxelTypes.getType(voxel.type);
+    if(!voxelType) return;
+    const state = new VoxelState(vector, this.model, voxelType);
     if (state.flag === 63) { return; }
+    this.aoCalculation.state = state;
     this.quads.offset = vector;
     this.buildFront(state);
     this.buildBack(state);
@@ -41,16 +54,18 @@ export class VoxelBuilder {
     this.buildLeft(state);
   }
 
-  appendQuad(side: number, quad: Quad) {
-    const texCoord = this.voxelType.texCoords[side];
-    const color = this.voxelType.colors[side] as vec4;
+  private appendQuad(side: number, quad: Quad, state: VoxelState) {
+    const texCoord = state.voxelType.texCoords[side];
+    const color = state.voxelType.colors[side] as vec4;
+    // the face == side
+
 
     quad.appendTo(this.quads, color, texCoord);
   }
 
-  appendTriangle(side: number, tri: Triangle) {
-    const texCoord = this.voxelType.texCoords[side];
-    const color = this.voxelType.colors[side] as vec4;
+  private appendTriangle(side: number, tri: Triangle, state: VoxelState) {
+    const texCoord = state.voxelType.texCoords[side];
+    const color = state.voxelType.colors[side] as vec4;
 
     tri.appendTo(this.tris, color, texCoord);
   }
@@ -68,19 +83,18 @@ export class VoxelBuilder {
   private buildFace(type: FaceType, state: VoxelState,
     quad: (q: Quad) => Quad,
     tri: (t: Triangle) => Triangle) {
-      if (state.sides[type.side]) {
-        return;
-      }
+      this.aoCalculation.side = type.side;
+      if(BitFlag.isSet(state.flag, type.flag)) return;
       let flag = 0;
       type.flanks.forEach((v, i) => {
-        if (BitFlags.isSet(state.flag, 1 << v)) {
-          flag =  BitFlags.set(flag, 1 << i);
+        if (BitFlag.isSet(state.flag, 1 << v)) {
+          flag =  BitFlag.set(flag, 1 << i);
         }
       });
       this.buildQuads(flag, type.side, q => {
-        this.appendQuad(type.side, quad(q));
+        this.appendQuad(type.side, quad(q), state);
       }, t => {
-        this.appendTriangle(type.side, tri(t));
+        this.appendTriangle(type.side, tri(t), state);
       });
   }
 

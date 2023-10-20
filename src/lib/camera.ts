@@ -6,6 +6,9 @@ export class GLCamera {
   public readonly aspect: number;
   public readonly zNear: number;
   public readonly zFar: number;
+  public readonly viewProjectionMatrix = mat4.create();
+  public readonly inverseViewProjectionMatrix =  mat4.create();
+
 
   public static MAIN: GLCamera | undefined;
 
@@ -25,6 +28,13 @@ export class GLCamera {
     this.projectionMatrix = mat4.create();
     this.buildMatrix();
 
+  }
+
+  public updateWorldMatrix(worldMatrix: mat4) {
+    //this.viewProjectionMatrix =
+    mat4.multiply(this.viewProjectionMatrix, this.projectionMatrix, worldMatrix);
+    //this.inverseViewProjectionMatrix =
+    mat4.invert(this.inverseViewProjectionMatrix, this.viewProjectionMatrix);
   }
 
   buildMatrix() {

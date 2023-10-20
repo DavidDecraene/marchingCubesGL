@@ -2,7 +2,7 @@ import { Polygon } from "./Polygon";
 import { vec4 } from 'gl-matrix';
 import { LVec } from "../utils/lvec";
 import { QuadBuilder } from "../builder/quad.builder";
-import { TexCoords } from "./TexCoords";
+import { ITexCoord } from "./TexCoords";
 
 export class Quad extends Polygon {
   private d_bl: Array<number>;
@@ -66,7 +66,7 @@ export class Quad extends Polygon {
     return clone;
   }
 
-  appendTo(quadBuilder: QuadBuilder, color: vec4, textC: TexCoords) {
+  appendTo(quadBuilder: QuadBuilder, color: vec4, textC: ITexCoord) {
     quadBuilder.append(this.d_bl,this.d_br,this.d_ur,this.d_ul, color, textC);
   }
 }
