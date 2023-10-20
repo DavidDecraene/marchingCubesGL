@@ -68,8 +68,8 @@ export function main() {
       const textureArray = new TextureArray(gl, ['./textures/sprite_2.png',
     './textures/sprite_1.png',
   './textures/sprite_0.png',
-'./textures/bark_8.png',
-'./textures/leaves_8_TP.png']);
+'./textures/Bark_8.png',
+'./textures/Leaves_8_TP.png']);
       typeDB.addType(new TypeBuilder(0).sides(2).top(1).build(grass));
       typeDB.addType(new TypeBuilder(0).build(dirt));
       typeDB.addType(new TypeBuilder(3).build(wood));
